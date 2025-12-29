@@ -371,14 +371,19 @@ static int resolve_expr_stack(struct fh_parser *p, struct fh_src_loc loc,
     }
 }
 
+static bool expr_is_lvalue(struct fh_p_expr *e) {
+    if (!e) return false;
+    return e->type == EXPR_VAR || e->type == EXPR_INDEX;
+}
+
 static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop,
                                     char *stop_chars) {
-    struct fh_p_expr *opns;
-    struct opr_info *oprs;
+    struct fh_p_expr *opns = NULL;
+    struct opr_info *oprs = NULL;
+    struct {
+        struct fh_p_expr *target;
+    } post;
     bool expect_opn = true;
-
-    opns = NULL;
-    oprs = NULL;
 
     while (1) {
         struct fh_token tok;
@@ -438,41 +443,6 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop,
             continue;
         }
 
-
-        /* stop char */
-        if (stop_chars != NULL && tok.type == TOK_PUNCT) {
-            bool is_stop = false;
-            for (char *stop = stop_chars; *stop != '\0'; stop++) {
-                if ((uint8_t) *stop == tok.data.punct) {
-                    is_stop = true;
-                    break;
-                }
-            }
-            if (is_stop) {
-                if (!consume_stop)
-                    unget_token(p, &tok);
-
-                //printf("BEFORE:\n"); dump_opn_stack(p, opns); dump_opr_stack(p, oprs);
-                if (resolve_expr_stack(p, tok.loc, &opns, &oprs, INT32_MIN) < 0)
-                    goto err;
-                //printf("AFTER:\n"); dump_opn_stack(p, opns); dump_opr_stack(p, oprs);
-
-                if (opn_stack_size(&opns) > 1) {
-                    dump_opn_stack(p, opns);
-                    dump_opr_stack(p, oprs);
-                    fh_parse_error(p, tok.loc, "syntax error (stack not empty!)");
-                    goto err;
-                }
-                struct fh_p_expr *ret = pop_opn(&opns);
-                if (!ret) {
-                    fh_parse_error(p, tok.loc, "unexpected '%s'", fh_dump_token(p->ast, &tok));
-                    goto err;
-                }
-                opr_stack_free(oprs);
-                return ret;
-            }
-        }
-
         /* ( expr... ) */
         if (tok_is_punct(&tok, '(')) {
             struct fh_p_expr *expr;
@@ -508,7 +478,7 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop,
             continue;
         }
         /* . */
-        else if (tok_is_punct(&tok, '.')) {
+        if (tok_is_punct(&tok, '.')) {
             if (expect_opn) {
                 fh_parse_error(p, tok.loc, "unexpected '.'");
                 goto err;
@@ -553,7 +523,7 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop,
             continue;
         }
         /* [ */
-        else if (tok_is_punct(&tok, '[')) {
+        if (tok_is_punct(&tok, '[')) {
             struct fh_p_expr *expr;
             if (expect_opn) {
                 expr = new_expr(p, tok.loc, EXPR_ARRAY_LIT, 0);
@@ -591,7 +561,7 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop,
             continue;
         }
         /* { */
-        else if (tok_is_punct(&tok, '{')) {
+        if (tok_is_punct(&tok, '{')) {
             if (!expect_opn) {
                 fh_parse_error(p, tok.loc, "unexpected '{'");
                 goto err;
@@ -607,8 +577,45 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop,
             push_opn(&opns, expr);
             continue;
         }
+        /* postfix let a = 0; --/++a; */
+        if (!expect_opn && tok.type == TOK_OP) {
+            const char *opname = fh_get_token_op(&tok);
+            if (opname && (strcmp(opname, "++") == 0 || strcmp(opname, "--") == 0)) {
+                if (resolve_expr_stack(p, tok.loc, &opns, &oprs, FUNC_CALL_PREC) < 0)
+                    goto err;
+
+                struct fh_p_expr *arg = pop_opn(&opns);
+                if (!arg) {
+                    fh_parse_error(p, tok.loc, "syntax error (postfix %s with no operand)", opname);
+                    goto err;
+                }
+
+                if (!expr_is_lvalue(arg)) {
+                    fh_free_expr(arg);
+                    fh_parse_error(p, tok.loc, "postfix %s expects a modifiable l-value", opname);
+                    goto err;
+                }
+
+                struct fh_p_expr *post = new_expr(
+                    p, tok.loc,
+                    (opname[0] == '+') ? EXPR_POST_INC : EXPR_POST_DEC,
+                    0
+                );
+                if (!post) {
+                    fh_free_expr(arg);
+                    goto err;
+                }
+
+                post->data.postfix.op = (opname[0] == '+') ? AST_OP_INC : AST_OP_DEC;
+                post->data.postfix.arg = arg;
+
+                push_opn(&opns, post);
+                expect_opn = false;
+                continue;
+            }
+        }
         /* operator */
-        else if (tok_is_op(&tok, NULL)) {
+        if (tok_is_op(&tok, NULL)) {
             if (expect_opn) {
                 struct fh_operator *op = fh_get_prefix_op(tok.data.op_name);
                 if (!op) {
@@ -636,7 +643,7 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop,
             continue;
         }
         /* number */
-        else if (tok_is_number(&tok)) {
+        if (tok_is_number(&tok)) {
             if (!expect_opn) {
                 fh_parse_error_expected(p, tok.loc, "'(' or operator");
                 goto err;
@@ -650,7 +657,7 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop,
             continue;
         }
         /* string */
-        else if (tok_is_string(&tok)) {
+        if (tok_is_string(&tok)) {
             if (!expect_opn) {
                 fh_parse_error_expected(p, tok.loc, "'(' or operator");
                 goto err;

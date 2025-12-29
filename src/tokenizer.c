@@ -100,8 +100,8 @@ const char *fh_get_token_string(struct fh_ast *ast, struct fh_token *tok) {
 
 static int next_byte(struct fh_tokenizer *t) {
     if (t->saved_byte >= 0) {
-        uint8_t ret = t->saved_byte;
-        struct fh_src_loc tmp = t->cur_loc;
+        const uint8_t ret = t->saved_byte;
+        const struct fh_src_loc tmp = t->cur_loc;
         t->cur_loc = t->saved_loc;
         t->saved_loc = tmp;
         t->saved_byte = -2;
@@ -383,22 +383,27 @@ int fh_read_token(struct fh_tokenizer *t, struct fh_token *tok) {
 
     // operator
     struct fh_src_loc op_loc = t->cur_loc;
-    char op_name[4] = {c};
+    char op_name[4] = {(char) c, '\0', '\0', '\0'};
     int op_len = 1;
     while (1) {
         op_name[op_len] = '\0';
         if (!fh_get_op(op_name)) {
-            op_name[--op_len] = '\0';
+            op_len--;
+            if (op_len < 0) {
+                break;
+            }
+            op_name[op_len] = '\0';
             unget_byte(t, c);
             break;
         }
 
         if (op_len == sizeof(op_name) - 1)
             break;
+
         c = next_byte(t);
         if (c < 0)
             break;
-        op_name[op_len++] = c;
+        op_name[op_len++] = (char) c;
     }
     if (op_len > 0) {
         tok->type = TOK_OP;

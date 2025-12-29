@@ -1,6 +1,9 @@
 
 fn main()
 {
+    while(1) {
+        break;
+    }
     let i = 0;
     let len1 = 12;
     while (i < len1) {

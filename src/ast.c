@@ -6,10 +6,9 @@
 
 #include "ast.h"
 
-struct fh_ast *fh_new_ast(struct fh_symtab *file_names)
-{
+struct fh_ast *fh_new_ast(struct fh_symtab *file_names) {
     struct fh_ast *ast = malloc(sizeof(struct fh_ast));
-    if (! ast)
+    if (!ast)
         return NULL;
     ast->func_vector = malloc(sizeof(vec_void_t));
     vec_init(ast->func_vector);
@@ -20,8 +19,7 @@ struct fh_ast *fh_new_ast(struct fh_symtab *file_names)
     return ast;
 }
 
-void fh_free_ast(struct fh_ast *ast)
-{
+void fh_free_ast(struct fh_ast *ast) {
     fh_free_named_func_vector(ast->func_vector);
     vec_deinit(ast->func_vector);
     free(ast->func_vector);
@@ -31,30 +29,25 @@ void fh_free_ast(struct fh_ast *ast)
     free(ast);
 }
 
-const char *fh_get_ast_symbol(struct fh_ast *ast, fh_symbol_id id)
-{
+const char *fh_get_ast_symbol(struct fh_ast *ast, fh_symbol_id id) {
     return fh_get_symbol_name(&ast->symtab, id);
 }
 
-const char *fh_get_ast_string(struct fh_ast *ast, fh_string_id id)
-{
+const char *fh_get_ast_string(struct fh_ast *ast, fh_string_id id) {
     return ast->string_pool.p + id;
 }
 
-fh_symbol_id fh_add_ast_file_name(struct fh_ast *ast, const char *filename)
-{
+fh_symbol_id fh_add_ast_file_name(struct fh_ast *ast, const char *filename) {
     return fh_add_symbol(ast->file_names, filename);
 }
 
-const char *fh_get_ast_file_name(struct fh_ast *ast, fh_symbol_id file_id)
-{
+const char *fh_get_ast_file_name(struct fh_ast *ast, fh_symbol_id file_id) {
     return fh_get_symbol_name(ast->file_names, file_id);
 }
 
 /* node creation */
 
-struct fh_p_named_func *fh_new_named_func(struct fh_ast *ast, struct fh_src_loc loc)
-{
+struct fh_p_named_func *fh_new_named_func(struct fh_ast *ast, struct fh_src_loc loc) {
     UNUSED(ast);
     struct fh_p_named_func *func = malloc(sizeof(struct fh_p_named_func));
     func->next = NULL;
@@ -62,11 +55,10 @@ struct fh_p_named_func *fh_new_named_func(struct fh_ast *ast, struct fh_src_loc 
     return func;
 }
 
-struct fh_p_expr *fh_new_expr(struct fh_ast *ast, struct fh_src_loc loc, enum fh_expr_type type, size_t extra_size)
-{
+struct fh_p_expr *fh_new_expr(struct fh_ast *ast, struct fh_src_loc loc, enum fh_expr_type type, size_t extra_size) {
     UNUSED(ast);
     struct fh_p_expr *expr = malloc(sizeof(struct fh_p_expr) + extra_size);
-    if (! expr)
+    if (!expr)
         return NULL;
     expr->next = NULL;
     expr->type = type;
@@ -74,11 +66,10 @@ struct fh_p_expr *fh_new_expr(struct fh_ast *ast, struct fh_src_loc loc, enum fh
     return expr;
 }
 
-struct fh_p_stmt *fh_new_stmt(struct fh_ast *ast, struct fh_src_loc loc, enum fh_stmt_type type, size_t extra_size)
-{
+struct fh_p_stmt *fh_new_stmt(struct fh_ast *ast, struct fh_src_loc loc, enum fh_stmt_type type, size_t extra_size) {
     UNUSED(ast);
     struct fh_p_stmt *stmt = malloc(sizeof(struct fh_p_stmt) + extra_size);
-    if (! stmt)
+    if (!stmt)
         return NULL;
     stmt->next = NULL;
     stmt->type = type;
@@ -87,16 +78,14 @@ struct fh_p_stmt *fh_new_stmt(struct fh_ast *ast, struct fh_src_loc loc, enum fh
 }
 
 /* node utility functions */
-int fh_expr_list_size(struct fh_p_expr *list)
-{
+int fh_expr_list_size(struct fh_p_expr *list) {
     int n = 0;
     for (struct fh_p_expr *e = list; e != NULL; e = e->next)
         n++;
     return n;
 }
 
-int fh_stmt_list_size(struct fh_p_stmt *list)
-{
+int fh_stmt_list_size(struct fh_p_stmt *list) {
     int n = 0;
     for (struct fh_p_stmt *s = list; s != NULL; s = s->next)
         n++;
@@ -105,22 +94,19 @@ int fh_stmt_list_size(struct fh_p_stmt *list)
 
 /* node destruction */
 
-void fh_free_named_func(struct fh_p_named_func *func)
-{
+void fh_free_named_func(struct fh_p_named_func *func) {
     fh_free_expr(func->func);
     free(func);
 }
 
-void fh_free_named_func_vector(vec_void_t *vector)
-{
+void fh_free_named_func_vector(vec_void_t *vector) {
     for (int i = 0; i < vector->length; i++) {
-        struct fh_p_named_func *f = (struct fh_p_named_func *)vector->data[i];
+        struct fh_p_named_func *f = (struct fh_p_named_func *) vector->data[i];
         fh_free_named_func(f);
     }
 }
 
-void fh_free_expr_children(struct fh_p_expr *expr)
-{
+void fh_free_expr_children(struct fh_p_expr *expr) {
     switch (expr->type) {
         case EXPR_NONE: return;
         case EXPR_VAR: return;
@@ -131,50 +117,52 @@ void fh_free_expr_children(struct fh_p_expr *expr)
         case EXPR_STRING: return;
 
         case EXPR_UN_OP:
-                          fh_free_expr(expr->data.un_op.arg);
-                          return;
+            fh_free_expr(expr->data.un_op.arg);
+            return;
 
         case EXPR_BIN_OP:
-                          fh_free_expr(expr->data.bin_op.left);
-                          fh_free_expr(expr->data.bin_op.right);
-                          return;
+            fh_free_expr(expr->data.bin_op.left);
+            fh_free_expr(expr->data.bin_op.right);
+            return;
 
         case EXPR_INDEX:
-                          fh_free_expr(expr->data.index.container);
-                          fh_free_expr(expr->data.index.index);
-                          return;
+            fh_free_expr(expr->data.index.container);
+            fh_free_expr(expr->data.index.index);
+            return;
 
         case EXPR_FUNC_CALL:
-                          fh_free_expr(expr->data.func_call.func);
-                          fh_free_expr_list(expr->data.func_call.arg_list);
-                          return;
+            fh_free_expr(expr->data.func_call.func);
+            fh_free_expr_list(expr->data.func_call.arg_list);
+            return;
 
         case EXPR_ARRAY_LIT:
-                          fh_free_expr_list(expr->data.array_lit.elem_list);
-                          return;
+            fh_free_expr_list(expr->data.array_lit.elem_list);
+            return;
 
         case EXPR_MAP_LIT:
-                          fh_free_expr_list(expr->data.map_lit.elem_list);
-                          return;
+            fh_free_expr_list(expr->data.map_lit.elem_list);
+            return;
 
         case EXPR_FUNC:
-                          fh_free_block(expr->data.func.body);
-                          return;
+            fh_free_block(expr->data.func.body);
+            return;
+        case EXPR_POST_INC:
+        case EXPR_POST_DEC:
+            fh_free_expr(expr->data.postfix.arg);
+            return;
     }
 
     fprintf(stderr, "INTERNAL ERROR: unknown expression type '%d'\n", expr->type);
 }
 
-void fh_free_expr(struct fh_p_expr *expr)
-{
+void fh_free_expr(struct fh_p_expr *expr) {
     if (expr) {
         fh_free_expr_children(expr);
         free(expr);
     }
 }
 
-void fh_free_expr_list(struct fh_p_expr *list)
-{
+void fh_free_expr_list(struct fh_p_expr *list) {
     struct fh_p_expr *e = list;
     while (e != NULL) {
         struct fh_p_expr *next = e->next;
@@ -183,8 +171,7 @@ void fh_free_expr_list(struct fh_p_expr *list)
     }
 }
 
-void fh_free_stmt_children(struct fh_p_stmt *stmt)
-{
+void fh_free_stmt_children(struct fh_p_stmt *stmt) {
     switch (stmt->type) {
         case STMT_NONE: return;
         case STMT_EMPTY: return;
@@ -192,67 +179,61 @@ void fh_free_stmt_children(struct fh_p_stmt *stmt)
         case STMT_CONTINUE: return;
 
         case STMT_EXPR:
-                            fh_free_expr(stmt->data.expr);
-                            return;
+            fh_free_expr(stmt->data.expr);
+            return;
 
         case STMT_VAR_DECL:
         case STMT_CONST_DECL:
-                            fh_free_expr(stmt->data.decl.val);
-                            return;
+            fh_free_expr(stmt->data.decl.val);
+            return;
 
         case STMT_BLOCK:
-                            fh_free_block(stmt->data.block);
-                            return;
+            fh_free_block(stmt->data.block);
+            return;
 
         case STMT_RETURN:
-                            fh_free_expr(stmt->data.ret.val);
-                            return;
+            fh_free_expr(stmt->data.ret.val);
+            return;
 
         case STMT_IF:
-                            fh_free_expr(stmt->data.stmt_if.test);
-                            fh_free_stmt(stmt->data.stmt_if.true_stmt);
-                            fh_free_stmt(stmt->data.stmt_if.false_stmt);
-                            for (size_t i = 0; i < stmt->data.stmt_if.num_elif_stmts; i++) {
-                                fh_free_stmt(stmt->data.stmt_if.elif_stmt[i]);
-                            }
-                            return;
+            fh_free_expr(stmt->data.stmt_if.test);
+            fh_free_stmt(stmt->data.stmt_if.true_stmt);
+            fh_free_stmt(stmt->data.stmt_if.false_stmt);
+            for (size_t i = 0; i < stmt->data.stmt_if.num_elif_stmts; i++) {
+                fh_free_stmt(stmt->data.stmt_if.elif_stmt[i]);
+            }
+            return;
 
         case STMT_ELIF:
-                            fh_free_expr(stmt->data.stmt_elif.test);
-                            fh_free_stmt(stmt->data.stmt_elif.stmt);
-                            return;
-
-        case STMT_WHILE:
-                            fh_free_expr(stmt->data.stmt_while.test);
-                            fh_free_stmt(stmt->data.stmt_while.stmt);
-                            return;
+            fh_free_expr(stmt->data.stmt_elif.test);
+            fh_free_stmt(stmt->data.stmt_elif.stmt);
+            return;
 
         case STMT_REPEAT:
-                            fh_free_expr(stmt->data.stmt_while.test);
-                            fh_free_stmt(stmt->data.stmt_while.stmt);
-                            return;
+        case STMT_WHILE:
+            fh_free_expr(stmt->data.stmt_while.test);
+            fh_free_stmt(stmt->data.stmt_while.stmt);
+            return;
 
         case STMT_FOR:
-                            fh_free_expr(stmt->data.stmt_for.test);
-                            fh_free_expr(stmt->data.stmt_for.increment);
-                            fh_free_stmt(stmt->data.stmt_for.stmt);
-                            fh_free_stmt(stmt->data.stmt_for.init);
-                            return;
+            fh_free_expr(stmt->data.stmt_for.test);
+            fh_free_expr(stmt->data.stmt_for.increment);
+            fh_free_stmt(stmt->data.stmt_for.stmt);
+            fh_free_stmt(stmt->data.stmt_for.init);
+            return;
     }
 
     fprintf(stderr, "INTERNAL ERROR: unknown statement type '%d'\n", stmt->type);
 }
 
-void fh_free_stmt(struct fh_p_stmt *stmt)
-{
+void fh_free_stmt(struct fh_p_stmt *stmt) {
     if (stmt) {
         fh_free_stmt_children(stmt);
         free(stmt);
     }
 }
 
-void fh_free_stmt_list(struct fh_p_stmt *list)
-{
+void fh_free_stmt_list(struct fh_p_stmt *list) {
     struct fh_p_stmt *s = list;
     while (s != NULL) {
         struct fh_p_stmt *next = s->next;
@@ -269,13 +250,11 @@ void fh_free_stmt_vector(vec_void_t *vector) {
     vec_deinit(vector);
 }
 
-void fh_free_block(struct fh_p_stmt_block block)
-{
+void fh_free_block(struct fh_p_stmt_block block) {
     fh_free_stmt_vector(&block.stmt_vector);
 }
 
-int fh_ast_visit_expr_nodes(struct fh_p_expr *expr, int (*visit)(struct fh_p_expr *expr, void *data), void *data)
-{
+int fh_ast_visit_expr_nodes(struct fh_p_expr *expr, int (*visit)(struct fh_p_expr *expr, void *data), void *data) {
     int ret;
     struct fh_p_expr *e;
 
@@ -283,56 +262,62 @@ int fh_ast_visit_expr_nodes(struct fh_p_expr *expr, int (*visit)(struct fh_p_exp
         return ret;
 
     switch (expr->type) {
-        case EXPR_NONE: return 0;
-        case EXPR_VAR: return 0;
-        case EXPR_CONST: return 0;
-        case EXPR_NULL: return 0;
-        case EXPR_BOOL: return 0;
-        case EXPR_FLOAT: return 0;
-        case EXPR_STRING: return 0;
-        case EXPR_FUNC: return 0;
+        case EXPR_NONE:
+        case EXPR_VAR:
+        case EXPR_CONST:
+        case EXPR_NULL:
+        case EXPR_BOOL:
+        case EXPR_FLOAT:
+        case EXPR_STRING:
+        case EXPR_FUNC:
+            return 0;
 
         case EXPR_UN_OP:
-                        if ((ret = fh_ast_visit_expr_nodes(expr->data.un_op.arg, visit, data)) != 0)
-                            return ret;
-                        return 0;
+            if ((ret = fh_ast_visit_expr_nodes(expr->data.un_op.arg, visit, data)) != 0)
+                return ret;
+            return 0;
 
         case EXPR_BIN_OP:
-                        if ((ret = fh_ast_visit_expr_nodes(expr->data.bin_op.left, visit, data)) != 0)
-                            return ret;
-                        if ((ret = fh_ast_visit_expr_nodes(expr->data.bin_op.right, visit, data)) != 0)
-                            return ret;
-                        return 0;
+            if ((ret = fh_ast_visit_expr_nodes(expr->data.bin_op.left, visit, data)) != 0)
+                return ret;
+            if ((ret = fh_ast_visit_expr_nodes(expr->data.bin_op.right, visit, data)) != 0)
+                return ret;
+            return 0;
 
         case EXPR_INDEX:
-                        if ((ret = fh_ast_visit_expr_nodes(expr->data.index.container, visit, data)) != 0)
-                            return ret;
-                        if ((ret = fh_ast_visit_expr_nodes(expr->data.index.index, visit, data)) != 0)
-                            return ret;
-                        return 0;
+            if ((ret = fh_ast_visit_expr_nodes(expr->data.index.container, visit, data)) != 0)
+                return ret;
+            if ((ret = fh_ast_visit_expr_nodes(expr->data.index.index, visit, data)) != 0)
+                return ret;
+            return 0;
 
         case EXPR_FUNC_CALL:
-                        if ((ret = fh_ast_visit_expr_nodes(expr->data.func_call.func, visit, data)) != 0)
-                            return ret;
-                        for (e = expr->data.func_call.arg_list; e != NULL; e = e->next) {
-                            if ((ret = fh_ast_visit_expr_nodes(e, visit, data)) != 0)
-                                return ret;
-                        }
-                        return 0;
+            if ((ret = fh_ast_visit_expr_nodes(expr->data.func_call.func, visit, data)) != 0)
+                return ret;
+            for (e = expr->data.func_call.arg_list; e != NULL; e = e->next) {
+                if ((ret = fh_ast_visit_expr_nodes(e, visit, data)) != 0)
+                    return ret;
+            }
+            return 0;
 
         case EXPR_ARRAY_LIT:
-                        for (e = expr->data.array_lit.elem_list; e != NULL; e = e->next) {
-                            if ((ret = fh_ast_visit_expr_nodes(e, visit, data)) != 0)
-                                return ret;
-                        }
-                        return 0;
+            for (e = expr->data.array_lit.elem_list; e != NULL; e = e->next) {
+                if ((ret = fh_ast_visit_expr_nodes(e, visit, data)) != 0)
+                    return ret;
+            }
+            return 0;
 
         case EXPR_MAP_LIT:
-                        for (e = expr->data.map_lit.elem_list; e != NULL; e = e->next) {
-                            if ((ret = fh_ast_visit_expr_nodes(e, visit, data)) != 0)
-                                return ret;
-                        }
-                        return 0;
+            for (e = expr->data.map_lit.elem_list; e != NULL; e = e->next) {
+                if ((ret = fh_ast_visit_expr_nodes(e, visit, data)) != 0)
+                    return ret;
+            }
+            return 0;
+        case EXPR_POST_INC:
+        case EXPR_POST_DEC:
+            if ((ret = fh_ast_visit_expr_nodes(expr->data.postfix.arg, visit, data)) != 0)
+                return ret;
+            return 0;
     }
 
     fprintf(stderr, "INTERNAL ERROR: unknown expression type '%d'\n", expr->type);

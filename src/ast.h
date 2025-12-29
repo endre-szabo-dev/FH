@@ -20,7 +20,9 @@ enum {
     AST_OP_OR,
     AST_OP_AND,
     AST_OP_RSH,
-    AST_OP_LSH
+    AST_OP_LSH,
+    AST_OP_INC,
+    AST_OP_DEC
 };
 
 /* =========================================== */
@@ -85,6 +87,7 @@ struct fh_p_stmt {
     enum fh_stmt_type type;
     struct fh_src_loc loc;
     struct fh_p_stmt *next;
+
     union {
         struct fh_p_stmt_decl decl;
         struct fh_p_stmt_block block;
@@ -115,6 +118,8 @@ enum fh_expr_type {
     EXPR_INDEX,
     EXPR_ARRAY_LIT,
     EXPR_MAP_LIT,
+    EXPR_POST_INC,
+    EXPR_POST_DEC,
 };
 
 struct fh_p_expr_bin_op {
@@ -153,10 +158,16 @@ struct fh_p_expr_map_lit {
     struct fh_p_expr *elem_list;
 };
 
+struct fh_p_expr_postfix {
+    uint32_t op; // AST_OP_INC / AST_OP_DEC
+    struct fh_p_expr *arg; // l-value
+};
+
 struct fh_p_expr {
     enum fh_expr_type type;
     struct fh_src_loc loc;
     struct fh_p_expr *next;
+
     union {
         fh_symbol_id var;
         double num;
@@ -169,6 +180,7 @@ struct fh_p_expr {
         struct fh_p_expr_index index;
         struct fh_p_expr_array_lit array_lit;
         struct fh_p_expr_map_lit map_lit;
+        struct fh_p_expr_postfix postfix;
     } data;
 };
 
@@ -192,34 +204,53 @@ struct fh_ast {
 };
 
 struct fh_ast *fh_new_ast(struct fh_symtab *file_names);
+
 void fh_free_ast(struct fh_ast *ast);
+
 const char *fh_get_ast_symbol(struct fh_ast *ast, fh_symbol_id id);
+
 const char *fh_get_ast_string(struct fh_ast *ast, fh_string_id id);
+
 const char *fh_get_ast_file_name(struct fh_ast *ast, fh_symbol_id file_id);
+
 fh_symbol_id fh_add_ast_file_name(struct fh_ast *ast, const char *filename);
 
 int fh_ast_visit_expr_nodes(struct fh_p_expr *expr, int (*visit)(struct fh_p_expr *expr, void *data), void *data);
 
 struct fh_p_expr *fh_new_expr(struct fh_ast *ast, struct fh_src_loc loc, enum fh_expr_type type, size_t extra_size);
+
 struct fh_p_stmt *fh_new_stmt(struct fh_ast *ast, struct fh_src_loc loc, enum fh_stmt_type type, size_t extra_size);
+
 struct fh_p_named_func *fh_new_named_func(struct fh_ast *ast, struct fh_src_loc loc);
 
 int fh_expr_list_size(struct fh_p_expr *list);
+
 int fh_stmt_list_size(struct fh_p_stmt *list);
 
 void fh_free_named_func(struct fh_p_named_func *func);
+
 void fh_free_named_func_vector(vec_void_t *vector);
+
 void fh_free_block(struct fh_p_stmt_block block);
+
 void fh_free_stmt(struct fh_p_stmt *stmt);
+
 void fh_free_stmt_children(struct fh_p_stmt *stmt);
+
 void fh_free_stmt_list(struct fh_p_stmt *list);
+
 void fh_free_stmt_vector(vec_void_t *vector);
+
 void fh_free_expr(struct fh_p_expr *expr);
+
 void fh_free_expr_children(struct fh_p_expr *expr);
+
 void fh_free_expr_list(struct fh_p_expr *list);
 
 void fh_dump_named_func(struct fh_ast *ast, struct fh_p_named_func *func);
+
 void fh_dump_expr(struct fh_ast *ast, struct fh_p_expr *expr);
+
 void fh_dump_ast(struct fh_ast *p);
 
 #endif /* AST_H_FILE */

@@ -377,7 +377,7 @@ changed_stack_frame: {
 
                 // close function upvalues (only those belonging to this frame)
                 struct fh_value *frame_start = vm->stack + frame->base;
-                struct fh_value *frame_end   = vm->stack + frame->stack_top;
+                struct fh_value *frame_end = vm->stack + frame->stack_top;
 
                 while (vm->open_upvals != NULL) {
                     struct fh_value *p = vm->open_upvals->val;
@@ -510,10 +510,6 @@ changed_stack_frame: {
                         int ni = i << 1;
                         struct fh_value *key = &ra[ni + 1];
                         struct fh_value *val = &ra[ni + 2];
-                        /*if (key->type == FH_VAL_NULL) {
-                          GC_UNPIN_OBJ(map);
-                          return vm_error(vm, "can't create array with null key");
-                          }*/
                         if (fh_add_map_object_entry(vm->prog, map, key, val) < 0) {
                             GC_UNPIN_OBJ(map);
                             goto err;
@@ -600,6 +596,28 @@ changed_stack_frame: {
 
             handle_op(OPC_BXOR) {
                 do_bitwise_arithmetic(^, ra, instr);
+                break;
+            }
+
+            handle_op(OPC_INC) {
+                struct fh_value *rb = LOAD_REG_OR_CONST(GET_INSTR_RB(instr));
+                if (rb->type != FH_VAL_FLOAT) {
+                    vm_error(vm, "increment on non-numeric value");
+                    goto user_err;
+                }
+                ra->type = FH_VAL_FLOAT;
+                ra->data.num = rb->data.num + 1.0;
+                break;
+            }
+
+            handle_op(OPC_DEC) {
+                struct fh_value *rb = LOAD_REG_OR_CONST(GET_INSTR_RB(instr));
+                if (rb->type != FH_VAL_FLOAT) {
+                    vm_error(vm, "decrement on non-numeric value");
+                    goto user_err;
+                }
+                ra->type = FH_VAL_FLOAT;
+                ra->data.num = rb->data.num - 1.0;
                 break;
             }
 

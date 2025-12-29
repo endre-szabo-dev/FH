@@ -46,7 +46,9 @@ enum fh_bc_opcode {
     OPC_BXOR,
     OPC_RSHIFT,
     OPC_LSHIFT,
-    OPC_BNOT
+    OPC_BNOT,
+    OPC_INC,
+    OPC_DEC
 };
 
 #define GET_INSTR_OP(instr)    (((uint32_t)(instr))&0x3f)

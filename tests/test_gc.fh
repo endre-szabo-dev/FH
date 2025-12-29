@@ -1,8 +1,10 @@
 fn main() {
+    let v = "0x0003";
     for (let i = 0; i < 100000; i =  i + 1) {
         let a = [];
         let b = {};
         let c = 42;
     }
+    assert(v == "0x0003");
     print('ok\n');
 }

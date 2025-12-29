@@ -337,20 +337,24 @@ int fh_compile_input(struct fh_program *prog, struct fh_input *in) {
         fh_set_error(prog, "out of memory for AST");
         return -1;
     }
-    if (fh_parse(&prog->parser, ast, in) < 0)
+    if (fh_parse(&prog->parser, ast, in) < 0) {
+        fh_set_error(prog, "can't parse '%s'", fh_get_input_filename(in));
         goto err;
+    }
 
     // fh_dump_ast(ast);
 
-    if (fh_compile(&prog->compiler, ast) < 0)
+    if (fh_compile(&prog->compiler, ast) < 0) {
+        fh_set_error(prog, "can't compile AST");
         goto err;
+    }
 
     fh_free_ast(ast);
     return 0;
 
 err:
-    if (ast)
-        fh_free_ast(ast);
+    fh_free_ast(ast);
+    fh_close_input(in);
     return -1;
 }
 
