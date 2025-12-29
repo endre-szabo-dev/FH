@@ -12,7 +12,7 @@
 #include "vec/vec.h"
 
 // major, minor, release (month, day, year, minute)
-#define FH_VERSION "1.0.rc5"
+#define FH_VERSION "1.0.rc6"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || defined(__WIN32__)
 #define FH_OS "windows"
@@ -106,8 +106,8 @@ struct fh_value {
 /*
  * This vector is used for storing all the created
  * programs via eval() function (c_funcs.c).
- * We cannot release the created programs imeddiatly
- * becaue we need to return the return value to the main program,
+ * We cannot release the created programs immediately
+ * because we need to return the return value to the main program,
  * hence if we free the items we produce undefined behavior.
  * Solution: free every created program (with eval()) at the end of
  * running the main program struct.
@@ -154,9 +154,6 @@ int fh_compile_file(struct fh_program *prog, const char *filename, bool is_manda
 int fh_compile_pack(struct fh_program *prog, const char *path, bool is_mandatory);
 
 void fh_dump_bytecode(struct fh_program *prog);
-
-int fh_call_function(struct fh_program *prog, const char *func_name,
-                     struct fh_value *args, int n_args, struct fh_value *ret);
 
 int fh_call_function(struct fh_program *prog, const char *func_name,
                      struct fh_value *args, int n_args, struct fh_value *ret);
@@ -247,7 +244,7 @@ bool fh_dump_doc;
  * Automatically set to 'true' when program.c starts and set to 'false' when
  * fh_set_error() is called.
  *
- * Useful when the C programmer wants to know the running state of FH
+ * Useful when needing the running state of FH
  */
 bool fh_running;
 
@@ -264,9 +261,9 @@ char *fh_main_file_packed;
 mtar_t fh_tar;
 mtar_header_t fh_tar_header;
 
-#define FH_IO_TAR_STRUCT_ID -102
-#define FH_IO_STRUCT_ID -101
-#define FH_TIME_STRUCT_ID -100
+#define FH_IO_TAR_STRUCT_ID (-102)
+#define FH_IO_STRUCT_ID (-101)
+#define FH_TIME_STRUCT_ID (-100)
 
 /*
  Holds a reference to all handlers for dynamic libraries loaded

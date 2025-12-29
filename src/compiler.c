@@ -647,7 +647,7 @@ static bool is_test_bin_op(struct fh_p_expr_bin_op *expr) {
 
 static int compile_postfix_incdec_to_reg(struct fh_compiler *c, struct fh_p_expr_postfix *pf, int dest_reg) {
     struct fh_p_expr *arg = pf->arg;
-    struct fh_src_loc loc = arg->loc;
+    const struct fh_src_loc loc = arg->loc;
 
     if (arg->type != EXPR_VAR && arg->type != EXPR_INDEX)
         return fh_compiler_error(c, loc, "postfix ++/-- expects a variable or index");
@@ -1881,7 +1881,7 @@ int fh_compile(struct fh_compiler *c, struct fh_ast *ast) {
         if (f->func->data.func.doc_string) {
             closure->doc_string = fh_make_string(c->prog, true, f->func->data.func.doc_string);
             if (fh_dump_doc) {
-                printf("documenation for function '%s' in %s:%d:%d: %s\n", name,
+                printf("documentation for function '%s' in %s:%d:%d: %s\n", name,
                        fh_get_symbol_name(&c->prog->src_file_names, f->loc.file_id),
                        f->loc.line, f->loc.col, f->func->data.func.doc_string);
             }
