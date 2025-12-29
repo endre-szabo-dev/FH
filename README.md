@@ -63,7 +63,7 @@ fn main() {
     if (c1.read() == 2 && c2.read() == 11) {
         printf("ok!\n");
     } else {
-        error("this should will not happen");
+        error("this should not happen");
     }
 }
 ```
@@ -140,7 +140,7 @@ fn main() {
 
 ## License
 
-Copyright (c) 2019-2025 Muresan Vlad Mihail
+Copyright (c) 2019-2025 Mureşan Vlad Mihail
 
 Contact Info <muresanvladmihail@gmail.com
 

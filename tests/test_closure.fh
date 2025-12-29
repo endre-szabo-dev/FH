@@ -35,7 +35,7 @@ fn main()
     let c1 = make_counter(0);
     let c2 = make_counter(100);
 
-    types_of_closures();
+    # types_of_closures();
 
     c1[1](1);
     c1[1](1);

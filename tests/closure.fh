@@ -12,19 +12,20 @@ fn make_counter(num) {
 }
 
 fn main() {
-    print("Hello, world!\n");
-
     let c1 = make_counter(0);
     let c2 = make_counter(10);
     c1.next();
     c2.next();
-    printf("%d, %d\n", c1.read(), c2.read());    # prints 1, 11
+    printf("%d, %d\n", c1.read(), c2.read());
+    assert(c1.read() == 1);
+    assert(c2.read() == 11);
 
     c1.next();
     if (c1.read() == 2 && c2.read() == 11) {
         printf("ok!\n");
     } else {
-        error("this should will not happen");
+        printf("%d, %d\n", c1.read(), c2.read());
+        error("Expected c1 to be 2 and c2 to be 11");
     }
 
     let i = 1;
@@ -36,5 +37,5 @@ fn main() {
         }
 
         return;
-        error("this should will not happen");
+        error("this should not happen");
     }

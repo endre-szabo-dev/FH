@@ -48,8 +48,7 @@ static int ensure_stack_size(struct fh_vm *vm, size_t size) {
     return 0;
 }
 
-static struct fh_vm_call_frame *prepare_call(struct fh_vm *vm,
-                                             struct fh_closure *closure, int ret_reg, int n_args) {
+static struct fh_vm_call_frame *prepare_call(struct fh_vm *vm, struct fh_closure *closure, int ret_reg, int n_args) {
     const struct fh_func_def *func_def = closure->func_def;
 
     if (ensure_stack_size(vm, ret_reg + 1 + func_def->n_regs) < 0)
@@ -238,7 +237,6 @@ static void close_upval(struct fh_vm *vm) {
     vm->open_upvals = uv->data.next;
     uv->data.storage = *uv->val;
     uv->val = &uv->data.storage;
-    uv->data.next = NULL;
 }
 
 static void dump_state(struct fh_vm *vm) {
@@ -377,9 +375,19 @@ changed_stack_frame: {
                 else
                     vm->stack[frame->base - 1].type = FH_VAL_NULL;
 
-                // close function upvalues
-                while (vm->open_upvals != NULL && vm->open_upvals->val >= vm->stack + frame->base)
+                // close function upvalues (only those belonging to this frame)
+                struct fh_value *frame_start = vm->stack + frame->base;
+                struct fh_value *frame_end   = vm->stack + frame->stack_top;
+
+                while (vm->open_upvals != NULL) {
+                    struct fh_value *p = vm->open_upvals->val;
+
+                    // if already closed, p won't point into vm->stack; stop because list is ordered by stack slots
+                    if (p < frame_start || p >= frame_end)
+                        break;
+
                     close_upval(vm);
+                }
 
                 uint32_t *ret_addr = frame->ret_addr;
                 call_frame_stack_pop(&vm->call_stack, NULL);
