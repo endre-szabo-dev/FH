@@ -9,6 +9,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "parser_stacks.h"
+#include "util.h"
 
 
 static struct fh_p_stmt_block *parse_block(struct fh_parser *p, struct fh_token *tok,
@@ -22,21 +23,6 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p,
 static struct fh_p_stmt *parse_stmt(struct fh_parser *p);
 
 static void reset_parser(struct fh_parser *p);
-
-/**
- * Check if the given string is uppercased or not.
- * @param str to be checked
- * @return -1 on error, when the given string is not totally uppercased
- * or 0 when it is.
- */
-static int string_is_upper(char *str) {
-    while (*str != '\0') {
-        if (!(*str >= 'A' && *str <= 'Z'))
-            return -1;
-        str++;
-    }
-    return 0;
-}
 
 void fh_init_parser(struct fh_parser *p, struct fh_program *prog) {
     p->prog = prog;
@@ -428,7 +414,7 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop, char
             } else {
                 expr->type = EXPR_VAR;
                 /* Check to see if we have a constant expression */
-                if (string_is_upper((char *) sym_name) == 0) {
+                if (fh_string_is_upper((char *) sym_name) == 0) {
                     expr->type = EXPR_CONST;
                 }
                 expr->data.var = tok.data.symbol_id;
