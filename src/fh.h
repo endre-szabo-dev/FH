@@ -49,7 +49,7 @@
 /**
 * Global instance for mt19937. Its seeds gets set once FH starts
 */
-extern mt19937_state *mt19937_generator;
+mt19937_state *mt19937_generator;
 
 /* Used when you want to deconstruct a c-object */
 typedef void (*fh_c_obj_gc_callback)(void *data);
@@ -112,7 +112,7 @@ struct fh_value {
  * Solution: free every created program (with eval()) at the end of
  * running the main program struct.
  */
-extern vec_void_t *fh_programs_vector;
+vec_void_t *fh_programs_vector;
 
 void fh_init(void);
 
@@ -239,27 +239,27 @@ int fh_run_pack(struct fh_program *prog, bool dump_bytecode, const char *pack_na
                 const char *main_function_name, char **args, int n_args, bool is_mandatory);
 
 
-extern bool fh_dump_doc;
+bool fh_dump_doc;
 /**
  * Automatically set to 'true' when program.c starts and set to 'false' when
  * fh_set_error() is called.
  *
  * Useful when needing the running state of FH
  */
-extern bool fh_running;
+bool fh_running;
 
 /**
  * When this flag is set to 'true' via ./fh -p <PATH_TO_PACK> <main_file>.fh.
  * Default set to 'false'
 */
-extern bool fh_is_packed;
-extern bool fh_started_pack;
+bool fh_is_packed;
+bool fh_started_pack;
 /**
  * Tells the name of the main file to run from a .fhpack
  */
-extern char *fh_main_file_packed;
-extern mtar_t fh_tar;
-extern mtar_header_t fh_tar_header;
+char *fh_main_file_packed;
+mtar_t fh_tar;
+mtar_header_t fh_tar_header;
 
 #define FH_IO_TAR_STRUCT_ID (-102)
 #define FH_IO_STRUCT_ID (-101)
@@ -269,6 +269,6 @@ extern mtar_header_t fh_tar_header;
  Holds a reference to all handlers for dynamic libraries loaded
  with -l.
 */
-extern vec_void_t fh_dynamic_libraries;
+vec_void_t fh_dynamic_libraries;
 
 #endif /* FH_H_FILE */

@@ -155,6 +155,7 @@ asan:
 	        fh
 
 clean:
+	find src -name "*.o" -type f -delete
 	rm -f fh src/*.o *~ src/lib/*.o src/map/*.o tests/dynamic_libraries/*.so
 
 .PHONY: $(TARGETS) build clean check test dump_exported_symbols dynamic_lib_test install uninstall

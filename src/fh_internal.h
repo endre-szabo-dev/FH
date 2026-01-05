@@ -64,7 +64,7 @@ extern const struct fh_named_c_func fh_std_c_funcs[];
 extern const int fh_std_c_funcs_len;
 
 /* Used in map.c to determine the length of each FH type for hashing. */
-extern uint32_t fh_type_size[11];
+uint32_t fh_type_size[11];
 
 uint32_t fh_hash(const void *data, size_t len);
 
