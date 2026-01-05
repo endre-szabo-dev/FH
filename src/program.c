@@ -6,6 +6,20 @@
 
 #include "program.h"
 #include "fh.h"
+#include "fh_internal.h"
+#include "crypto/bcrypt.h"
+
+bool fh_running;
+bool fh_is_packed;
+bool fh_started_pack;
+bool fh_dump_doc;
+char *fh_main_file_packed;
+mtar_t fh_tar;
+mtar_header_t fh_tar_header;
+vec_void_t fh_dynamic_libraries;
+uint32_t fh_type_size[11];
+mt19937_state *mt19937_generator;
+vec_void_t *fh_programs_vector;
 
 void fh_init() {
     fh_programs_vector = malloc(sizeof(vec_void_t));

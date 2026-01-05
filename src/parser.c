@@ -9,7 +9,6 @@
 #include "parser.h"
 #include "ast.h"
 #include "parser_stacks.h"
-#include "util.h"
 
 
 static struct fh_p_stmt_block *parse_block(struct fh_parser *p, struct fh_token *tok,
