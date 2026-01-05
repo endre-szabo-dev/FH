@@ -15,7 +15,7 @@ WORKDIR /app
 COPY . .
 
 # Build the project and strip debug symbols
-RUN make clean && make -j2 TARGETS=release && strip fh
+RUN make clean && make -j4 TARGETS=release && strip fh
 
 # Stage 2: Runner
 FROM debian:stable-slim
