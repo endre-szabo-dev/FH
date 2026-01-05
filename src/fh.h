@@ -12,7 +12,7 @@
 #include "vec/vec.h"
 
 // major, minor, release (month, day, year, minute)
-#define FH_VERSION "1.0.rc6"
+#define FH_VERSION "1.0.0-rc6"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || defined(__WIN32__)
 #define FH_OS "windows"
