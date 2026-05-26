@@ -24,11 +24,11 @@ fn main(args)
 
     if (len(plane) != 101 || len(plane[0]) != 101) {
         error("nope");
-        }
+    }
 
-    if (plane[  0][  0] != 1) 
+    if (plane[0][ 0] != 1)
         error("nope");
-    if (plane[100][100] != 1) 
+    if (plane[ 100][100] != 1)
         error("nope");
     if (plane[ 50][  2] <  1) 
         error("nope");

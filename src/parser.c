@@ -9,6 +9,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "parser_stacks.h"
+#include "util.h"
 
 
 static struct fh_p_stmt_block *parse_block(struct fh_parser *p, struct fh_token *tok,
@@ -102,7 +103,7 @@ static int get_token(struct fh_parser *p, struct fh_token *tok) {
     return 0;
 }
 
-static void unget_token(struct fh_parser *p, struct fh_token *tok) {
+static void unget_token(struct fh_parser *p, const struct fh_token *tok) {
     if (p->has_saved_tok) {
         fprintf(stderr, "ERROR: can't unget token: buffer full\n");
         return;
@@ -346,7 +347,7 @@ static int resolve_expr_stack(struct fh_parser *p, struct fh_src_loc loc,
                 break;
         }
 
-        if (expr->type == EXPR_FLOAT) {
+        if (expr->type == EXPR_FLOAT || expr->type == EXPR_INTEGER) {
             fh_free_expr(expr);
             fh_parse_error(p, loc, "bad operator assoc: %d", op_assoc);
             return -1;
@@ -575,17 +576,13 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop, char
                     goto err;
                 }
 
-                struct fh_p_expr *post = new_expr(
-                    p, tok.loc,
-                    (opname[0] == '+') ? EXPR_POST_INC : EXPR_POST_DEC,
-                    0
-                );
+                struct fh_p_expr *post = new_expr(p, tok.loc, (opname[0] == '+') ? EXPR_POST_INC : EXPR_POST_DEC, 0);
                 if (!post) {
                     fh_free_expr(arg);
                     goto err;
                 }
 
-                post->data.postfix.op = (opname[0] == '+') ? AST_OP_INC : AST_OP_DEC;
+                post->data.postfix.op = (opname[0] == '+') ? AST_OP_PRE_INC : AST_OP_PRE_DEC;
                 post->data.postfix.arg = arg;
 
                 push_opn(&opns, post);
@@ -621,16 +618,26 @@ static struct fh_p_expr *parse_expr(struct fh_parser *p, bool consume_stop, char
             }
             continue;
         }
-        /* number */
-        if (tok_is_number(&tok)) {
+        /* number or integer */
+        if (tok_is_number(&tok) || tok_is_integer(&tok)) {
             if (!expect_opn) {
                 fh_parse_error_expected(p, tok.loc, "'(' or operator");
                 goto err;
             }
-            struct fh_p_expr *num = new_expr(p, tok.loc, EXPR_FLOAT, 0);
-            if (!num)
-                goto err;
-            num->data.num = tok.data.num;
+
+            struct fh_p_expr *num;
+            if (tok_is_integer(&tok)) {
+                num = new_expr(p, tok.loc, EXPR_INTEGER, 0);
+                if (!num)
+                    goto err;
+                num->data.i = tok.data.i;
+            } else {
+                num = new_expr(p, tok.loc, EXPR_FLOAT, 0);
+                if (!num)
+                    goto err;
+                num->data.num = tok.data.num;
+            }
+
             push_opn(&opns, num);
             expect_opn = false;
             continue;

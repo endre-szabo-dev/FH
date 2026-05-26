@@ -21,8 +21,8 @@ enum {
     AST_OP_AND,
     AST_OP_RSH,
     AST_OP_LSH,
-    AST_OP_INC,
-    AST_OP_DEC
+    AST_OP_PRE_INC,
+    AST_OP_PRE_DEC
 };
 
 /* =========================================== */
@@ -110,6 +110,7 @@ enum fh_expr_type {
     EXPR_NULL,
     EXPR_BOOL,
     EXPR_FLOAT,
+    EXPR_INTEGER,
     EXPR_STRING,
     EXPR_BIN_OP,
     EXPR_UN_OP,
@@ -171,6 +172,7 @@ struct fh_p_expr {
     union {
         fh_symbol_id var;
         double num;
+        int64_t i;
         bool b;
         fh_string_id str;
         struct fh_p_expr_bin_op bin_op;
@@ -235,7 +237,7 @@ void fh_free_block(struct fh_p_stmt_block block);
 
 void fh_free_stmt(struct fh_p_stmt *stmt);
 
-void fh_free_stmt_children(struct fh_p_stmt *stmt);
+void fh_free_stmt_children(const struct fh_p_stmt *stmt);
 
 void fh_free_stmt_list(struct fh_p_stmt *list);
 

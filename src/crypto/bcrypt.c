@@ -47,8 +47,6 @@
 #include <time.h>
 #include "bcrypt.h"
 
-mt19937_state mt19937state;
-
 #ifndef __set_errno
 #define __set_errno(val) errno = (val)
 #endif

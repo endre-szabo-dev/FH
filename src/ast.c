@@ -29,7 +29,7 @@ void fh_free_ast(struct fh_ast *ast) {
     free(ast);
 }
 
-const char *fh_get_ast_symbol(struct fh_ast *ast, fh_symbol_id id) {
+const char *fh_get_ast_symbol(struct fh_ast *ast, const fh_symbol_id id) {
     return fh_get_symbol_name(&ast->symtab, id);
 }
 
@@ -108,13 +108,15 @@ void fh_free_named_func_vector(vec_void_t *vector) {
 
 void fh_free_expr_children(struct fh_p_expr *expr) {
     switch (expr->type) {
-        case EXPR_NONE: return;
-        case EXPR_VAR: return;
-        case EXPR_CONST: return;
-        case EXPR_NULL: return;
-        case EXPR_BOOL: return;
-        case EXPR_FLOAT: return;
-        case EXPR_STRING: return;
+        case EXPR_NONE:
+        case EXPR_VAR:
+        case EXPR_CONST:
+        case EXPR_NULL:
+        case EXPR_BOOL:
+        case EXPR_FLOAT:
+        case EXPR_INTEGER:
+        case EXPR_STRING:
+            return;
 
         case EXPR_UN_OP:
             fh_free_expr(expr->data.un_op.arg);
@@ -171,12 +173,13 @@ void fh_free_expr_list(struct fh_p_expr *list) {
     }
 }
 
-void fh_free_stmt_children(struct fh_p_stmt *stmt) {
+void fh_free_stmt_children(const struct fh_p_stmt *stmt) {
     switch (stmt->type) {
-        case STMT_NONE: return;
-        case STMT_EMPTY: return;
-        case STMT_BREAK: return;
-        case STMT_CONTINUE: return;
+        case STMT_NONE:
+        case STMT_EMPTY:
+        case STMT_BREAK:
+        case STMT_CONTINUE:
+            return;
 
         case STMT_EXPR:
             fh_free_expr(stmt->data.expr);
@@ -268,6 +271,7 @@ int fh_ast_visit_expr_nodes(struct fh_p_expr *expr, int (*visit)(struct fh_p_exp
         case EXPR_NULL:
         case EXPR_BOOL:
         case EXPR_FLOAT:
+        case EXPR_INTEGER:
         case EXPR_STRING:
         case EXPR_FUNC:
             return 0;

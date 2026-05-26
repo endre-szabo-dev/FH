@@ -13,7 +13,8 @@ fn print_array(arr)
 fn main(args)
 { 
     let x = [1,[2],3,];
-    append(x, "four", "五");
+    append(x, "four");
+    append(x, "五");
 
     assert(x[0]);
     assert(x[1]);
@@ -40,28 +41,28 @@ fn main(args)
     assert(a[1][3] == "l");
     assert(a[1][4] == "o");
     assert(a[2] == _arr);
-    assert(has(a, "hello")[1] == 1);
     assert(has(a, "hello")[0] == "hello");
+    assert(has(a, "hello")[1] == 1);
 
     let test = [];
-    insert(test, 50, 'Hi');
+    reserve(test, 50);
+    test[50] = 'Hi';
     assert(test[50] == 'Hi');
-    insert(test, 30, 32);
+    test[30] = 32;
     gc();
     assert(test[30] == 32);
-    insert(test, 10, true);
+    test[10] = true;
     assert(test[10] == true);
-    insert(test, 69, false);
+    test[69] = false;
     assert(test[69] == false);
 
     let t = [];
-    grow(t, 50);
-    assert(len(t) == 50);
+    reserve(t, 50);
+    assert(len(t) == 0);
     for (let i = 0; i < 50; i = i + 1) {
         t[i] = i;
         if (i == 30) {
             gc();
-            t[20] = 20;
         }
         assert(t[i] == i);
     }

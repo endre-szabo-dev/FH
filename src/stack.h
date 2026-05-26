@@ -16,14 +16,25 @@ struct fh_stack {
 };
 
 void fh_init_stack(struct fh_stack *s);
+
 void fh_free_stack(struct fh_stack *s);
+
+void fh_init_stack_cap(struct fh_stack *s, int cap_items, size_t item_size);
+
 int fh_stack_shrink_to_fit(struct fh_stack *s, size_t item_size);
+
 int fh_copy_stack(struct fh_stack *dst, const struct fh_stack *src, size_t item_size);
+
 int fh_stack_size(struct fh_stack *s);
+
 void *fh_push(struct fh_stack *s, void *item, size_t item_size);
+
 int fh_pop(struct fh_stack *s, void *item, size_t item_size);
+
 void *fh_stack_item(struct fh_stack *s, int index, size_t item_size);
+
 void *fh_stack_top(struct fh_stack *s, size_t item_size);
+
 void *fh_stack_next(struct fh_stack *s, void *cur, size_t item_size);
 
 int fh_stack_ensure_cap(struct fh_stack *s, int n_items, size_t item_size);
@@ -73,11 +84,22 @@ static inline int name##_pop(struct name *n, type *item) {            \
     if (item) *item = ((type*)n->s.data)[n->s.num];                     \
     return 0;                                                           \
 }                                                                     \
+static inline void name##_init_cap(struct name *n, int cap_items) {     \
+fh_init_stack_cap(&n->s, cap_items, sizeof(type));                  \
+}                                                                      \
+static inline type *name##_push_uninit(struct name *n) { \
+if (n->s.num + 1 > n->s.cap && fh_stack_ensure_cap(&n->s, 1, sizeof(type)) < 0) \
+return NULL; \
+type *dest = (type*)n->s.data + n->s.num; \
+n->s.num++; \
+return dest; \
+} \
 static inline type *name##_push(struct name *n, type *item) {         \
     if (n->s.num + 1 > n->s.cap && fh_stack_ensure_cap(&n->s, 1, sizeof(type)) < 0)                \
     return NULL;                                                      \
     type *dest = (type*)n->s.data + n->s.num;                           \
-    if (item) *dest = *item; else memset(dest, 0, sizeof(type));        \
+    if (item) *dest = *item;                                            \
+    else memset(dest, 0, sizeof(type));                                   \
     n->s.num++;                                                         \
     return dest;                                                        \
 }                                                                     \

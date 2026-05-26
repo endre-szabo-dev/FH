@@ -1,6 +1,0 @@
-fn main() {
-    let m = {};
-    for (let i = 0; i < 1000000; i = i + 1) {
-        m[i] = i;
-    }
-}

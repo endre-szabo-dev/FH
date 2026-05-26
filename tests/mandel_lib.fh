@@ -25,6 +25,7 @@ fn mandelbrot(x1,y1, x2,y2, size_x,size_y, max_iter, out)
     while (ny < size_y) {
         let x = x1;
         let nx = 0;
+        if (nx == 1 && ny == 0) println("after 1: x=", x, " y=", y);
         while (nx < size_x) {
             let c = calc_point(x, y, max_iter);
             if (c == max_iter)

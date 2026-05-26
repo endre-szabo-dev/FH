@@ -9,18 +9,18 @@
 #include "fh_internal.h"
 #include "bytecode.h"
 
-static uint32_t rotl32(uint32_t x, int r) {
+static inline uint32_t rotl32(uint32_t x, int r) {
 	return (x << r) | (x >> (32 - r));
 }
 
-static uint32_t read32(const void *p) {
+static inline uint32_t read32(const void *p) {
 	uint32_t v;
 	// safe for unaligned access, optimizers usually turn this into a single load
 	memcpy(&v, p, sizeof(v));
 	return v;
 }
 
-static uint32_t avalanche32(uint32_t h) {
+static inline uint32_t avalanche32(uint32_t h) {
 	// XXH32 avalanche
 	h ^= h >> 15;
 	h *= 0x85EBCA77u;
@@ -30,7 +30,26 @@ static uint32_t avalanche32(uint32_t h) {
 	return h;
 }
 
-uint32_t fh_hash(const void *data, size_t len) {
+static inline uint32_t fmix32(uint32_t h) {
+	h ^= h >> 16;
+	h *= 0x85EBCA6Bu;
+	h ^= h >> 13;
+	h *= 0xC2B2AE35u;
+	h ^= h >> 16;
+	return h;
+}
+
+
+uint32_t fh_hash(const void *data, const size_t len) {
+	const uint8_t *p = (const uint8_t *) data;
+
+	// fast path: tiny strings
+	if (len <= 8) {
+		uint32_t h = 0x9E3779B1u ^ (uint32_t) len;
+		for (size_t i = 0; i < len; i++) h = (h * 0x85EBCA77u) ^ p[i];
+		return fmix32(h);
+	}
+
 	// XXH32 primes
 	const uint32_t PRIME1 = 0x9E3779B1u; // 2654435761
 	const uint32_t PRIME2 = 0x85EBCA77u;
@@ -38,7 +57,6 @@ uint32_t fh_hash(const void *data, size_t len) {
 	const uint32_t PRIME4 = 0x27D4EB2Fu;
 	const uint32_t PRIME5 = 0x165667B1u;
 
-	const uint8_t *p = (const uint8_t *) data;
 	const uint8_t *end = p + len;
 
 	uint32_t h;
@@ -123,7 +141,7 @@ uint32_t fh_hash(const void *data, size_t len) {
 // 	return hash % cap;
 // }
 
-static uint32_t reduce_to_cap(uint32_t h, size_t cap) {
+static inline uint32_t reduce_to_cap(const uint32_t h, const size_t cap) {
 	if ((cap & (cap - 1)) == 0) {
 		return h & (uint32_t) (cap - 1);
 	}
@@ -132,56 +150,7 @@ static uint32_t reduce_to_cap(uint32_t h, size_t cap) {
 
 uint32_t fh_hash2(const void *data, size_t len, size_t cap) {
 	if (cap == 0) return 0;
-
-	// XXH32 primes
-	const uint32_t PRIME1 = 0x9E3779B1u;
-	const uint32_t PRIME2 = 0x85EBCA77u;
-	const uint32_t PRIME3 = 0xC2B2AE3Du;
-	const uint32_t PRIME4 = 0x27D4EB2Fu;
-	const uint32_t PRIME5 = 0x165667B1u;
-
-	const uint8_t *p = (const uint8_t *) data;
-	const uint8_t *end = p + len;
-
-	uint32_t h;
-
-	if (len >= 16) {
-		uint32_t v1 = PRIME1 + PRIME2;
-		uint32_t v2 = PRIME2;
-		uint32_t v3 = 0;
-		uint32_t v4 = (uint32_t) (0u - PRIME1);
-
-		const uint8_t *limit = end - 16;
-		do {
-			v1 = rotl32(v1 + read32(p) * PRIME2, 13) * PRIME1;
-			p += 4;
-			v2 = rotl32(v2 + read32(p) * PRIME2, 13) * PRIME1;
-			p += 4;
-			v3 = rotl32(v3 + read32(p) * PRIME2, 13) * PRIME1;
-			p += 4;
-			v4 = rotl32(v4 + read32(p) * PRIME2, 13) * PRIME1;
-			p += 4;
-		} while (p <= limit);
-
-		h = rotl32(v1, 1) + rotl32(v2, 7) + rotl32(v3, 12) + rotl32(v4, 18);
-	} else {
-		h = PRIME5;
-	}
-
-	h += (uint32_t) len;
-
-	while ((size_t) (end - p) >= 4) {
-		h = rotl32(h + read32(p) * PRIME3, 17) * PRIME4;
-		p += 4;
-	}
-
-	while (p < end) {
-		h = rotl32(h + (*p++) * PRIME5, 11) * PRIME1;
-	}
-
-	h = avalanche32(h);
-
-	return reduce_to_cap(h, cap);
+	return reduce_to_cap(fh_hash(data, len), cap);
 }
 
 void fh_dump_string(const char *str) {
@@ -217,6 +186,8 @@ void fh_dump_value(const struct fh_value *val) {
 			return;
 		case FH_VAL_FLOAT: printf("NUMBER(%f)", val->data.num);
 			return;
+		case FH_VAL_INTEGER: printf("NUMBER(%lld)", val->data.i);
+			return;
 		case FH_VAL_STRING: printf("STRING(");
 			fh_dump_string(fh_get_string(val));
 			printf(")");
@@ -241,13 +212,13 @@ void fh_dump_value(const struct fh_value *val) {
 	printf("INVALID_VALUE(type=%d)", val->type);
 }
 
-int fh_utf8_len(char *str, size_t str_size) {
+int fh_utf8_len(char *str, const size_t str_size) {
 	int len = 0;
-	uint8_t *p = (uint8_t *) str;
-	uint8_t *end = (uint8_t *) str + str_size;
+	const uint8_t *p = (uint8_t *) str;
+	const uint8_t *end = (uint8_t *) str + str_size;
 
 	while (p < end) {
-		uint8_t c = *p++;
+		const uint8_t c = *p++;
 		if (c == 0)
 			break;
 		if ((c & 0x80) == 0) {

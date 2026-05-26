@@ -35,8 +35,8 @@ int fh_run_string(struct fh_program *prog, bool dump_bytecode, const char *strin
     if (main_function_name != NULL && fh_call_function(prog, main_function_name, NULL, 0, &script_ret) < 0)
         return -1;
 
-    if (fh_is_number(&script_ret))
-        return (int) fh_get_number(&script_ret);
+    if (fh_is_float(&script_ret))
+        return (int) fh_get_float(&script_ret);
     return 0;
 }
 
@@ -70,8 +70,8 @@ int fh_run_pack(struct fh_program *prog, bool dump_bytecode, const char *pack_pa
     if (main_function_name != NULL && fh_call_function(prog, main_function_name, &script_args, 1, &script_ret) < 0)
         return -1;
 
-    if (fh_is_number(&script_ret))
-        return (int) fh_get_number(&script_ret);
+    if (fh_is_float(&script_ret))
+        return (int) fh_get_float(&script_ret);
 
     return 0;
 }
@@ -98,8 +98,8 @@ int fh_run_script_file(struct fh_program *prog, bool dump_bytecode, const char *
     if (main_function_name != NULL && fh_call_function(prog, main_function_name, &script_args, 1, &script_ret) < 0)
         return -1;
 
-    if (fh_is_number(&script_ret))
-        return (int) fh_get_number(&script_ret);
+    if (fh_is_float(&script_ret))
+        return (int) fh_get_float(&script_ret);
     return 0;
 }
 

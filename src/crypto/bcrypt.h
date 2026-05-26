@@ -5,7 +5,7 @@
 
 #include "mt19937.h"
 
-extern mt19937_state mt19937state;
+mt19937_state mt19937state;
 void bcrypt_init(void);
 
 /*

@@ -327,13 +327,19 @@ int fh_read_token(struct fh_tokenizer *t, struct fh_token *tok) {
         }
 
         char *end = NULL;
-        double num = strtod(t->tmp->p, &end);
+        if (got_point == true) {
+            const double num = strtod(t->tmp->p, &end);
+            tok->type = TOK_NUMBER;
+            tok->data.num = num;
+        } else {
+            const int64_t num = strtoll(t->tmp->p, &end, 10);
+            tok->type = TOK_INTEGER;
+            tok->data.i = num;
+        }
         if (t->tmp->p == end) {
             set_error(t, tok->loc, "invalid number");
             return -1;
         }
-        tok->type = TOK_NUMBER;
-        tok->data.num = num;
         return 0;
     }
 

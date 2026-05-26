@@ -28,10 +28,17 @@ struct block_info {
 
 DECLARE_STACK(block_info_stack, struct block_info);
 
+enum fh_type_hint {
+    H_UNKNOWN = 0,
+    H_INT = 1,
+    H_FLOAT = 2,
+};
+
 struct reg_info {
     fh_symbol_id var;
     bool alloc;
     bool used_by_inner_func;
+    uint8_t hint;
 };
 
 DECLARE_STACK(reg_stack, struct reg_info);
@@ -60,9 +67,13 @@ struct fh_compiler {
 };
 
 void fh_init_compiler(struct fh_compiler *c, struct fh_program *prog);
+
 void fh_destroy_compiler(struct fh_compiler *c);
+
 int fh_compile(struct fh_compiler *c, struct fh_ast *ast);
+
 int fh_compiler_error(struct fh_compiler *c, struct fh_src_loc loc, char *fmt, ...) FH_PRINTF_FORMAT(3, 4);
+
 uint32_t *fh_get_compiler_instructions(struct fh_compiler *c, int32_t *len);
 
 #endif /* COMPILER_H_FILE */
