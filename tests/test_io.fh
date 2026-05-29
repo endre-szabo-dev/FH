@@ -1,29 +1,92 @@
-fn main() {
-    #fh = file handler
-    let fh = io_open("tests/write_test.txt", "wb");
-    io_write(fh, "Hello ");
+fn safe_remove(path) {
+    let t = io_filetype(path);
+    if (t == "file" || t == "directory") {
+        assert(io_remove(path) == true);
+    }
+}
+
+fn test_write_seek_read() {
+    let path = "tests/write_test.txt";
+
+    safe_remove(path);
+
+    # 1) Write initial content
+    let fh = io_open(path, "wb");
+    io_write(fh, "Hello           ");
     io_write(fh, "\n");
     io_write(fh, 42);
+    io_write(fh, "\n");
+    io_write(fh, 3.14);
     io_write(fh, "\n");
     io_write(fh, true);
     io_write(fh, "\n");
     io_write(fh, false);
 
-    io_seek(fh, 5, "set");
+    # 2) Seek and overwrite middle
+    io_seek(fh, 5, "set"); # "Hello " -> at index 5 (0-based) before the space
     io_write(fh, " World! :-)");
+    assert(io_close(fh) == true);
+
+    # 3) Read and validate
+    fh = io_open(path);
+    let read = io_read(fh);
+    assert(io_close(fh) == true);
+
+    let expected = "Hello World! :-)\n42\n3.14\ntrue\nfalse";
+    assert(read == expected, "write/seek/read mismatch:\nexpected: " + expected + "\ngot: " + read);
+
+    # cleanup
+    safe_remove(path);
+}
+
+fn test_rename_and_remove() {
+    let src = "tests/write_test.txt";
+    let dst = "tests/to_be_removed.txt";
+
+    safe_remove(src);
+    safe_remove(dst);
+
+    # create src
+    let fh = io_open(src, "wb");
+    io_write(fh, "tmp");
     io_close(fh);
 
-    fh = io_open("tests/write_test.txt");
-    printf('%s\n', io_read(fh));
-    io_close(fh);
+    assert(io_filetype(src) == "file", "expected src to be file before rename");
 
-    io_rename('tests/write_test.txt', 'tests/to_be_removed.txt');
-    io_remove('tests/to_be_removed.txt');
+    assert(io_rename(src, dst));
 
-    let err = io_mkdir('tests/TEST_MK_DIR');
+    assert(io_filetype(src) != "file", "src should not exist as file after rename");
+    assert(io_filetype(dst) == "file", "dst should exist as file after rename");
 
-    assert(io_filetype('tests/1.fh') == 'file');
-    assert(io_filetype('tests') == 'directory');
+    assert(io_remove(dst));
 
-    println ('ok');
+    assert(io_filetype(dst) != "file", "dst should not exist as file after remove");
+}
+
+fn test_mkdir_and_filetype() {
+    let dir = "tests/TEST_MK_DIR";
+
+    # ensure clean
+    if (io_filetype(dir) == "directory") {
+        assert(io_remove(dir) == true);
+    }
+
+    let err = io_mkdir(dir);
+    # dacă io_mkdir întoarce cod de eroare, verifică explicit
+    # dacă întoarce null/true/etc, ajustează în funcție de API-ul tău
+    assert(err == 0 || err == null || err == true, "io_mkdir returned error: " + err);
+
+    assert(io_filetype("tests/1.fh") == "file", "tests/1.fh should be file");
+    assert(io_filetype("tests") == "directory", "tests should be directory");
+    assert(io_filetype(dir) == "directory", dir + " should be directory after mkdir");
+
+    # cleanup
+    io_remove(dir);
+}
+
+fn main() {
+    test_write_seek_read();
+    test_rename_and_remove();
+    test_mkdir_and_filetype();
+    print("ok\n");
 }

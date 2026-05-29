@@ -47,8 +47,6 @@
 #include <time.h>
 #include "bcrypt.h"
 
-mt19937_state mt19937state;
-
 #ifndef __set_errno
 #define __set_errno(val) errno = (val)
 #endif
@@ -725,3 +723,4 @@ int bcrypt_hashpw(const char *passwd, const char salt[BCRYPT_HASHSIZE], char has
 void bcrypt_init(void) {
     mt19937_seed(&mt19937state, (unsigned) time(NULL));
 }
+mt19937_state mt19937state;

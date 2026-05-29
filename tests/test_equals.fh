@@ -1,94 +1,88 @@
-
-fn assert_eq(x, y)
-{
-    if (! (x == y))
+fn assert_eq(x, y) {
+    if (!(x == y))
         error("nope");
-        if (x != y)
-            error("nope");
-        }
+    if (x != y)
+        error("nope");
+}
 
-        fn assert_neq(x, y)
-        {
-            if (x == y)
-                error("nope");
-                if (! (x != y))
-                    error("nope");
-                }
+fn assert_neq(x, y) {
+    if (x == y)
+        error("nope");
+    if (!(x != y))
+        error("nope");
+}
 
-                fn hello()
-                {
-                    return "hello";
-                }
+fn hello() {
+    return "hello";
+}
 
-                fn main(args)
-                {
-                    let x;
+fn main(args) {
+    let x;
 
-                    x = null;
-                    assert_eq(x, x);
-                    assert_neq(x, false);
-                    assert_neq(x, true);
-                    assert_neq(x, 0);
-                    assert_neq(x, []);
-                    assert_neq(x, fn(){});
+    x = null;
+    assert_eq(x, x);
+    assert_neq(x, false);
+    assert_neq(x, true);
+    assert_neq(x, 0);
+    assert_neq(x, []);
+    assert_neq(x, fn(){});
 
-                    x = false;
-                    assert_eq(x, x);
-                    assert_neq(x, true);
-                    assert_neq(x, null);
-                    assert_neq(x, 0);
-                    assert_neq(x, []);
-                    assert_neq(x, fn(){});
+    x = false;
+    assert_eq(x, x);
+    assert_neq(x, true);
+    assert_neq(x, null);
+    assert_neq(x, 0);
+    assert_neq(x, []);
+    assert_neq(x, fn(){});
 
-                    x = true;
-                    assert_eq(x, x);
-                    assert_neq(x, false);
-                    assert_neq(x, null);
-                    assert_neq(x, 0);
-                    assert_neq(x, []);
-                    assert_neq(x, fn(){});
+    x = true;
+    assert_eq(x, x);
+    assert_neq(x, false);
+    assert_neq(x, null);
+    assert_neq(x, 0);
+    assert_neq(x, []);
+    assert_neq(x, fn(){});
 
-                    x = 42;
-                    assert_eq(x, x);
-                    assert_eq(x, 42);
-                    assert_neq(x, null);
-                    assert_neq(x, 0);
-                    assert_neq(x, []);
-                    assert_neq(x, fn(){});
+    x = 42;
+    assert_eq(x, x);
+    assert_eq(x, 42);
+    assert_neq(x, null);
+    assert_neq(x, 0);
+    assert_neq(x, []);
+    assert_neq(x, fn(){});
 
-                    x = "hello";
-                    assert_eq(x, x);
-                    assert_eq(x, "hello");
-                    assert_eq(x, hello());   # force it to be a different string object
-                    assert_neq(x, null);
-                    assert_neq(x, 0);
-                    assert_neq(x, []);
-                    assert_neq(x, fn(){});
+    x = "hello";
+    assert_eq(x, x);
+    assert_eq(x, "hello");
+    assert_eq(x, hello());   # force it to be a different string object
+    assert_neq(x, null);
+    assert_neq(x, 0);
+    assert_neq(x, []);
+    assert_neq(x, fn(){});
 
-                    x = [1];
-                    assert_eq(x, x);
-                    assert_neq(x, [1]);
-                    assert_neq(x, null);
-                    assert_neq(x, 0);
-                    assert_neq(x, []);
-                    assert_neq(x, fn(){});
+    x = [1];
+    assert_eq(x, x);
+    assert_neq(x, [1]);
+    assert_neq(x, null);
+    assert_neq(x, 0);
+    assert_neq(x, []);
+    assert_neq(x, fn(){});
 
-                    x = fn(){};
-                    assert_eq(x, x);
-                    assert_neq(x, null);
-                    assert_neq(x, 0);
-                    assert_neq(x, []);
-                    assert_neq(x, fn(){});
+    x = fn(){};
+    assert_eq(x, x);
+    assert_neq(x, null);
+    assert_neq(x, 0);
+    assert_neq(x, []);
+    assert_neq(x, fn(){});
 
+    assert(144 > 10 == true);
+    assert(1 < 10 == true);
+    assert(10 < 8 == false);
+    assert(2 > 100 == false);
+    assert(2 >= 2 == true);
+    assert(2 >= 1 == true);
+    assert(2 <= 10 == true);
+    assert(2 <= 1 == false);
 
-                    assert (144 > 10 == true);
-                    assert (1 < 10 == true);
-                    assert (10 < 8 == false);
-                    assert (2 > 100 == false);
-                    assert (2 >= 2 == true);
-                    assert (2 >= 1 == true);
-                    assert (2 <= 10 == true);
-                    assert (2 <= 1 == false);
-
-                    print("ok\n");
-                }
+    print("ok\n");
+}

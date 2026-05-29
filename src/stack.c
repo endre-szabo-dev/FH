@@ -2,14 +2,32 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "stack.h"
+
 
 void fh_init_stack(struct fh_stack *s) {
     s->data = NULL;
     s->num = 0;
     s->cap = 0;
 }
+
+void fh_init_stack_cap(struct fh_stack *s, int cap_items, size_t item_size) {
+    s->data = NULL;
+    s->num = 0;
+    s->cap = 0;
+
+    if (cap_items <= 0) return;
+
+    void *p = malloc((size_t) cap_items * item_size);
+    if (!p) {
+        return;
+    }
+    s->data = p;
+    s->cap = cap_items;
+}
+
 
 void fh_free_stack(struct fh_stack *s) {
     if (s->data) {
@@ -51,10 +69,9 @@ int fh_stack_shrink_to_fit(struct fh_stack *s, size_t item_size) {
 }
 
 int fh_stack_ensure_cap(struct fh_stack *s, int n_items, size_t item_size) {
-    if (s->num + n_items >= s->cap) {
-        int new_cap = (s->num + n_items + 512) / 512 * 512;
-        while (new_cap <= s->num + n_items) new_cap += 512;
-
+    int needed = s->num + n_items;
+    if (needed > s->cap) {
+        const int new_cap = (needed + 511) / 512 * 512;
         void *new_data = realloc(s->data, new_cap * item_size);
         if (new_data == NULL)
             return -1;

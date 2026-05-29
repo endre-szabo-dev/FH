@@ -23,10 +23,20 @@ enum fh_bc_opcode {
     OPC_JMP,
     OPC_TEST,
     OPC_CMP_EQ,
+    OPC_CMP_EQI,
+    OPC_CMP_EQF,
     OPC_CMP_LT,
+    OPC_CMP_LTI,
+    OPC_CMP_LTF,
     OPC_CMP_LE,
+    OPC_CMP_LEI,
+    OPC_CMP_LEF,
     OPC_CMP_GT,
+    OPC_CMP_GTI,
+    OPC_CMP_GTF,
     OPC_CMP_GE,
+    OPC_CMP_GEI,
+    OPC_CMP_GEF,
 
     OPC_GETEL,
     OPC_SETEL,
@@ -34,6 +44,8 @@ enum fh_bc_opcode {
     OPC_NEWMAP,
 
     OPC_ADD,
+    OPC_ADDI,
+    OPC_ADDF,
     OPC_SUB,
     OPC_MUL,
     OPC_DIV,
@@ -48,7 +60,10 @@ enum fh_bc_opcode {
     OPC_LSHIFT,
     OPC_BNOT,
     OPC_INC,
-    OPC_DEC
+    OPC_DEC,
+
+    OPC_LEN,
+    OPC_APPEND
 };
 
 #define GET_INSTR_OP(instr)    (((uint32_t)(instr))&0x3f)

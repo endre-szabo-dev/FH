@@ -6,22 +6,8 @@
 
 #include "program.h"
 #include "fh.h"
-#include "fh_internal.h"
-#include "crypto/bcrypt.h"
 
-bool fh_running;
-bool fh_is_packed;
-bool fh_started_pack;
-bool fh_dump_doc;
-char *fh_main_file_packed;
-mtar_t fh_tar;
-mtar_header_t fh_tar_header;
-vec_void_t fh_dynamic_libraries;
-uint32_t fh_type_size[11];
-mt19937_state *mt19937_generator;
-vec_void_t *fh_programs_vector;
-
-void fh_init() {
+void fh_init(void) {
     fh_programs_vector = malloc(sizeof(vec_void_t));
     vec_init(fh_programs_vector);
     fh_is_packed = false;
@@ -29,18 +15,6 @@ void fh_init() {
     fh_started_pack = false;
 
     vec_init(&fh_dynamic_libraries);
-
-    // see fh_internal.h
-    fh_type_size[FH_VAL_NULL] = 0;
-    fh_type_size[FH_VAL_BOOL] = sizeof(bool);
-    fh_type_size[FH_VAL_FLOAT] = sizeof(double);
-    fh_type_size[FH_VAL_C_FUNC] = sizeof(fh_c_func);
-    fh_type_size[FH_VAL_ARRAY] = sizeof(struct fh_array);
-    fh_type_size[FH_VAL_MAP] = sizeof(struct fh_map);
-    fh_type_size[FH_VAL_UPVAL] = sizeof(struct fh_upval);
-    fh_type_size[FH_VAL_CLOSURE] = sizeof(struct fh_closure);
-    fh_type_size[FH_VAL_C_OBJ] = sizeof(struct fh_c_obj);
-    fh_type_size[FH_VAL_FUNC_DEF] = sizeof(struct fh_func_def);
 
     bcrypt_init();
 
@@ -86,6 +60,12 @@ struct fh_program *fh_new_program(void) {
     struct fh_program *prog = malloc(sizeof(struct fh_program));
     if (!prog)
         return NULL;
+
+    map_init(&prog->global_funcs_map);
+    map_init(&prog->c_funcs_map);
+
+    vec_init(&prog->c_vals);
+    vec_init(&prog->pinned_objs);
     prog->gc_frequency = 0;
     prog->gc_collect_at = 1000000;
     prog->gc_isPaused = false;
@@ -100,12 +80,6 @@ struct fh_program *fh_new_program(void) {
     fh_init_parser(&prog->parser, prog);
     fh_init_compiler(&prog->compiler, prog);
     // p_object_stack_init(&prog->pinned_objs);
-
-    map_init(&prog->global_funcs_map);
-    map_init(&prog->c_funcs_map);
-
-    vec_init(&prog->c_vals);
-    vec_init(&prog->pinned_objs);
 
 
     if (fh_add_c_funcs(prog, fh_std_c_funcs, fh_std_c_funcs_len) < 0)
@@ -132,13 +106,9 @@ err:
 
 void fh_free_program(struct fh_program *prog) {
     prog->gc_isPaused = false;
-    // if (p_object_stack_size(&prog->pinned_objs) > 0)
-    if (prog->pinned_objs.length > 0)
-        fprintf(stderr, "*** WARNING: %d pinned object(s) on exit\n", prog->pinned_objs.length);
-    //p_object_stack_size(&prog->pinned_objs));
+    fh_destroy_char_cache(&prog->vm);
 
     fh_destroy_symtab(&prog->src_file_names);
-    // p_object_stack_free(&prog->pinned_objs);
     named_c_func_stack_free(&prog->c_funcs);
 
     fh_collect_garbage(prog);
@@ -239,6 +209,18 @@ int fh_set_verror(struct fh_program *prog, const char *fmt, va_list ap) {
     return -1;
 }
 
+int64_t fh_as_i64(struct fh_program *prog, const struct fh_value *v, const char *fn) {
+    if (v->type == FH_VAL_INTEGER) return v->data.i;
+    if (v->type == FH_VAL_FLOAT) {
+        const double d = v->data.num;
+        if (!isfinite(d) || d < (double) INT64_MIN || d > (double) INT64_MAX) {
+            return fh_set_error(prog, "%s: number out of int64 range", fn);
+        }
+        return (int64_t) d;
+    }
+    return fh_set_error(prog, "%s: expected number/integer", fn);
+}
+
 int fh_get_pin_state(struct fh_program *prog) {
     // return p_object_stack_size(&prog->pinned_objs);
     return prog->pinned_objs.length;
@@ -259,8 +241,7 @@ void fh_restore_pin_state(struct fh_program *prog, int state) {
 }
 
 int fh_add_c_func(struct fh_program *prog, const char *name, fh_c_func func) {
-    struct named_c_func **cfn
-            = (struct named_c_func **) map_get(&prog->c_funcs_map, name);
+    struct named_c_func **cfn = (struct named_c_func **) map_get(&prog->c_funcs_map, name);
     if (cfn) {
         fprintf(stderr, "Error: duplicating C function '%s'!\n", name);
         return -1;
@@ -274,8 +255,7 @@ int fh_add_c_func(struct fh_program *prog, const char *name, fh_c_func func) {
     return 0;
 }
 
-int fh_add_c_funcs(struct fh_program *prog, const struct fh_named_c_func *funcs,
-                   int n_funcs) {
+int fh_add_c_funcs(struct fh_program *prog, const struct fh_named_c_func *funcs, int n_funcs) {
     for (int i = 0; i < n_funcs; i++)
         if (fh_add_c_func(prog, funcs[i].name, funcs[i].func) < 0)
             return -1;
@@ -291,8 +271,7 @@ const char *fh_get_c_func_name(struct fh_program *prog, fh_c_func func) {
 }
 
 fh_c_func fh_get_c_func_by_name(struct fh_program *prog, const char *name) {
-    struct named_c_func **func
-            = (struct named_c_func **) map_get(&prog->c_funcs_map, name);
+    struct named_c_func **func = (struct named_c_func **) map_get(&prog->c_funcs_map, name);
     if (func) {
         return (*func)->func;
     }
@@ -300,13 +279,11 @@ fh_c_func fh_get_c_func_by_name(struct fh_program *prog, const char *name) {
 }
 
 int fh_add_global_func(struct fh_program *prog, struct fh_closure *closure) {
-    struct fh_closure **val = (struct fh_closure **) map_get(
-        &prog->global_funcs_map, GET_OBJ_STRING_DATA(closure->func_def->name));
-    if (val) {
-        if (closure->func_def->name != NULL) {
-            *val = closure;
-            return 0;
-        }
+    struct fh_closure **val = (struct fh_closure **) map_get(&prog->global_funcs_map,
+                                                             GET_OBJ_STRING_DATA(closure->func_def->name));
+    if (val && closure->func_def->name != NULL) {
+        *val = closure;
+        return 0;
     }
     map_set(&prog->global_funcs_map, GET_OBJ_STRING_DATA(closure->func_def->name), closure);
     return 0;
@@ -314,7 +291,6 @@ int fh_add_global_func(struct fh_program *prog, struct fh_closure *closure) {
 
 int fh_get_num_global_funcs(struct fh_program *prog) {
     int len = 0;
-    const char *key;
 
     map_iter_t iter = map_iter(&prog->global_funcs_map);
     while ((/*key = */map_next(&prog->global_funcs_map, &iter))) {
@@ -454,3 +430,13 @@ void *fh_load_dynamic_library(const char *path, struct fh_program *prog) {
     return handle;
 }
 
+mt19937_state *mt19937_generator;
+bool fh_running;
+vec_void_t *fh_programs_vector;
+vec_void_t fh_dynamic_libraries;
+mtar_header_t fh_tar_header;
+mtar_t fh_tar;
+char *fh_main_file_packed;
+bool fh_started_pack;
+bool fh_is_packed;
+bool fh_dump_doc;

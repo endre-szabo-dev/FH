@@ -34,8 +34,8 @@ static struct fh_operator ops[] = {
     {'!', "!", FH_ASSOC_PREFIX, 100},
     {'~', "~", FH_ASSOC_PREFIX, 100},
     {'^', "^", FH_ASSOC_RIGHT, 110},
-    {AST_OP_INC, "++", FH_ASSOC_PREFIX, 100},
-    {AST_OP_DEC, "--", FH_ASSOC_PREFIX, 100},
+    {AST_OP_PRE_INC, "++", FH_ASSOC_PREFIX, 100},
+    {AST_OP_PRE_DEC, "--", FH_ASSOC_PREFIX, 100},
 };
 
 static struct fh_operator *find_op(const char *name, unsigned int assoc_mask) {

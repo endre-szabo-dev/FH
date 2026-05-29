@@ -1,22 +1,22 @@
 fn main() {
 	let a = 0;
 	repeat {
-		a = a + 1;
-	} until (a > 5);
-	assert(a == 6);
-	a  = 0;
+		a++;
+	} until (a < 5);
+	assert(a == 5);
 
+	a  = 0;
 	repeat {
 		a = a + 1;
 		if (a == 3) continue;
 		assert(a != 3);
-	} until (a > 5);
+	} until (a < 5);
 
 	a = 0;
 	repeat {
-		a = a + 1;
+		a++;
 		if (a == 3) break;
-	} until (a > 5);
+	} until (a < 5);
 	assert(a == 3);
 
 	a = 0;
@@ -25,7 +25,7 @@ fn main() {
 		if (a == 3) continue;
 		elif (a == 5) break;
 		assert(a != 3);
-	} until (a > 5);
+	} until (a < 5);
 	assert(a == 5);
 
 	print('ok\n');

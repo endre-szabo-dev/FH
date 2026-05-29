@@ -7,30 +7,9 @@ where scripts are sandboxed, deterministic, and tightly integrated with C code.
 
 Test with:
 
-```
+```text
 $ make -j2
 $ ./fh tests/mandelbrot.fh
-```
-
-## Docker Build
-
-You can build and test `fh` using Docker (Alpine or Debian) without installing local dependencies.
-
-**Helper Script (Recommended):**
-```bash
-# Build and test on Alpine (musl)
-./build_docker.sh alpine build
-./build_docker.sh alpine test
-
-# Build and test on Debian (glibc)
-./build_docker.sh debian build
-./build_docker.sh debian test
-```
-
-**Manual Docker Commands:**
-```bash
-docker build -f docker/Dockerfile.alpine -t fh-alpine .
-docker run --rm fh-alpine ./run_tests_release.sh
 ```
 
 ## Features
