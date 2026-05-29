@@ -1,10 +1,22 @@
 fn main() {
+    let RUN_FOR = 100000;
     let v = "0x0003";
-    for (let i = 0; i < 100000; i =  i + 1) {
+    for (let i = 0; i < RUN_FOR; i =  i + 1) {
         let a = [];
         let b = {};
         let c = 42;
     }
     assert(v == "0x0003");
+
+    let m = {};
+    reserve(m, RUN_FOR);
+    let sum = 0;
+
+    for (let i = 0; i < RUN_FOR; i = i + 1) {
+        m["x"+i] = i;
+        sum = sum + i;
+    }
+
+    assert(len(m) == RUN_FOR);
     print('ok\n');
 }

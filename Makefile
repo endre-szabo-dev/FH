@@ -1,11 +1,22 @@
 OS=$(shell uname -s)
 
 CC = gcc
-CFLAGS = -std=c99 -DFH_USE_MAIN_FUNC=1 -fcommon
+CFLAGS = -std=c99 -DFH_USE_MAIN_FUNC=1
 LDFLAGS =
+DEBUG_SAN_CFLAGS = -O1 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls \
+  -Wall -Wextra -Wpedantic -Wshadow -Wundef -Wconversion -Wstrict-prototypes \
+  -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls \
+  -Wdouble-promotion -Wformat=2 -Wcast-qual -Wwrite-strings \
+  -fsanitize=address,undefined \
+  -fno-sanitize-recover=all
+DEBUG_DEV_CFLAGS = -O0 -g3 -fno-omit-frame-pointer -fno-optimize-sibling-calls \
+  -Wall -Wextra -Wpedantic -Wshadow -Wundef -Wconversion -Wstrict-prototypes \
+  -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls \
+  -Wdouble-promotion -Wformat=2 -Wcast-qual -Wwrite-strings
 LIBS = -lm -ldl
 
 ifeq ($(OS), Darwin)
+	CC = clang
 	LIBS := $(filter-out -ldl,$(LIBS))
 endif
 ifeq ($(OS), OpenBSD)
@@ -28,20 +39,25 @@ SRCS=$(patsubst %.o,%.c,$(OBJS))
 
 CHECK_SCRIPT = tests/test.fh
 
-# Possible inputs: debug, debug2, release and asan.
+# Possible inputs: debug, debug_dev, debug2, release, debug_san and asan.
 # Note: leave no spaces behind or after the equal sign below
-TARGETS =debug
+TARGETS =release
 
-#-Wundef: undefined macro variables used in #if.
-#-Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations: make sure that functions are prototyped properly.
+ifeq ($(TARGETS), debug_dev)
+	CFLAGS += $(DEBUG_DEV_CFLAGS)
+endif
 ifeq ($(TARGETS), debug)
 	CFLAGS += -O0 -g3 -pedantic -Wall -Wextra -Wundef -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations
 endif
 ifeq ($(TARGETS), debug2) # Used for gprof
 	CFLAGS += -O0 -g3 -pedantic-errors -pg -Wall -Wextra -Wundef -no-pie
 endif
+ifeq ($(TARGETS), debug_san)
+	CFLAGS += $(DEBUG_SAN_CFLAGS)
+	LDFLAGS += $(DEBUG_SAN_LDFLAGS)
+endif
 ifeq ($(TARGETS), release)
-	CFLAGS += -O3
+	CFLAGS += -O3 -DNDEBUG -flto -fomit-frame-pointer -march=native
 endif
 ifeq ($(TARGETS), asan)
 	CFLAGS += -fsanitize=address -fno-omit-frame-pointer -O -g -Wall -Wextra
@@ -54,8 +70,6 @@ build: fh
 	@echo "Compilation successful!  Try these examples:"
 	@echo
 	@echo "  ./fh tests/test.fh"
-	@echo "  ./fh tests/mandelbrot.fh"
-	@echo "  ./fh tests/mandel_color.fh"
 	@echo
 
 fh: $(OBJS)
@@ -155,7 +169,6 @@ asan:
 	        fh
 
 clean:
-	find src -name "*.o" -type f -delete
 	rm -f fh src/*.o *~ src/lib/*.o src/map/*.o tests/dynamic_libraries/*.so
 
 .PHONY: $(TARGETS) build clean check test dump_exported_symbols dynamic_lib_test install uninstall

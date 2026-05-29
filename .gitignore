@@ -6,6 +6,7 @@
 *.ko
 *.obj
 *.elf
+./fh
 
 # Linker output
 *.ilk
@@ -280,6 +281,7 @@ CMakeCache.txt
 CMakeFiles
 CMakeScripts
 Testing
+Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
@@ -300,6 +302,3 @@ obj/
 # Xmake cache
 .xmake/
 build/
-
-# Build
-fh

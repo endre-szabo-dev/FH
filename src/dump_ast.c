@@ -14,6 +14,7 @@ static bool expr_needs_paren(struct fh_p_expr *expr) {
         case EXPR_VAR:
         case EXPR_CONST:
         case EXPR_FLOAT:
+        case EXPR_INTEGER:
         case EXPR_STRING:
         case EXPR_FUNC_CALL:
             return false;
@@ -70,6 +71,10 @@ static void dump_expr(struct fh_ast *ast, int indent, struct fh_p_expr *expr) {
 
         case EXPR_FLOAT:
             printf("%g", expr->data.num);
+            return;
+
+        case EXPR_INTEGER:
+            printf("%lld", expr->data.i);
             return;
 
         case EXPR_STRING:

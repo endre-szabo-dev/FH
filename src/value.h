@@ -140,12 +140,23 @@ struct fh_upval_def {
 #define UPVAL_IS_OPEN(uv)    ((uv)->val != &(uv)->data.storage)
 
 // non-object types
-#define fh_make_null   fh_new_null
-#define fh_make_bool   fh_new_bool
-#define fh_make_number fh_new_number
-#define fh_make_c_func fh_new_c_func
+#define fh_make_null    fh_new_null
+#define fh_make_bool    fh_new_bool
+#define fh_make_float   fh_new_float
+#define fh_make_integer fh_new_integer
+#define fh_make_c_func  fh_new_c_func
+
+int fh_arg_int32(struct fh_program *prog, const struct fh_value *v, const char *fn, int arg_index_0_based,
+                 int32_t *out);
+
+int fh_arg_double(struct fh_program *prog, const struct fh_value *v, const char *fn, int arg_index_0_based,
+                  double *out);
+
 
 double fh_optnumber(struct fh_value *args, int n_args, int check, double opt);
+
+int64_t fh_optinteger(struct fh_value *args, int n_args, int check, int64_t opt);
+
 
 bool fh_optboolean(struct fh_value *args, int n_args, int check, bool opt);
 
@@ -178,7 +189,13 @@ struct fh_string *fh_make_string_n(struct fh_program *prog, bool pinned, const c
 // object functions
 void fh_free_object(struct fh_program *prog, union fh_object *obj);
 
+bool fh_vals_are_equal(struct fh_value *v1, struct fh_value *v2);
+
 struct fh_value *fh_grow_array_object(struct fh_program *prog, struct fh_array *arr, uint32_t num_items);
+
+struct fh_value *fh_grow_array_object_uninit(struct fh_program *prog, struct fh_array *arr, uint32_t num_items);
+
+int fh_reserve_array_capacity(struct fh_program *prog, struct fh_array *arr, uint32_t min_cap);
 
 void fh_reset_array(struct fh_array *arr);
 
@@ -188,11 +205,10 @@ int fh_alloc_map_object_len(struct fh_map *map, uint32_t len);
 
 int fh_next_map_object_key(struct fh_map *map, struct fh_value *key, struct fh_value *next_key);
 
-void fh_extends_map(struct fh_program *prog, struct fh_map *map, struct fh_map *from);
-
 int fh_get_map_object_value(struct fh_map *map, struct fh_value *key, struct fh_value *val);
 
-int fh_add_map_object_entry(struct fh_program *prog, struct fh_map *map, struct fh_value *key, struct fh_value *val);
+int fh_add_map_object_entry(struct fh_program *prog, struct fh_map *map, struct fh_value *key,
+                            const struct fh_value *val);
 
 int fh_delete_map_object_entry(struct fh_map *map, struct fh_value *key);
 

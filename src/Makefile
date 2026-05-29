@@ -7,7 +7,7 @@ CXX ?= clang++
 AR ?= ar rcs
 RM ?= rm -rf
 
-MODE ?= debug        # debug or release
+MODE ?= release        # debug or release
 ifeq ($(MODE),release)
 CFLAGS := -O2 -DNDEBUG
 CXXFLAGS := -O2 -DNDEBUG

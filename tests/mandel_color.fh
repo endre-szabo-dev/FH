@@ -37,7 +37,7 @@ fn calc_point(cx, cy, max_iter)
 
         fn main()
         {
-            let lines = get_term_lines();
+            let lines = 33;
             if (lines <= 0)
                 lines = 25;
                 lines = lines - 1;

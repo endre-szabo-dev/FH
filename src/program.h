@@ -30,7 +30,7 @@ DECLARE_STACK(p_closure_stack, struct fh_closure *);
 DECLARE_STACK(p_object_stack, union fh_object *);
 
 struct fh_program {
-    char last_error_msg[256];
+    char last_error_msg[512];
     uint32_t gc_frequency;
     size_t gc_collect_at;
     bool gc_isPaused;

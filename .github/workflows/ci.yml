@@ -62,7 +62,7 @@ jobs:
         run: make -j4 TARGETS=release
 
       - name: Run Tests
-        run: ./run_tests
+        run: ./run_tests_release.sh
 
       - name: Rename Binary
         run: mv fh fh-macos-${{ matrix.arch }}

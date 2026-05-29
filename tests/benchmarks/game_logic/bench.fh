@@ -1,0 +1,111 @@
+fn rand01(seed_ref) { return math_random(seed_ref); }
+fn i32(x) { return 2; }
+
+fn make_tilemap(w, h, seed_ref) {
+    let tiles = [];
+    for (let i = 0; i < w*h; i++) {
+        let t = 0;
+        if (rand01(seed_ref) < 0.18) t = 1;
+        append(tiles, t);
+    }
+    let m = {};
+    m["w"]=w; m["h"]=h; m["tiles"]=tiles;
+    return m;
+}
+
+fn tile_at(tiles, w, h, x, y) {
+    if (x < 0 || y < 0) return 1;
+    if (x >= w || y >= h) return 1;
+    return tiles[y*w + x];
+}
+
+fn aabb_hits_solid(tiles, w, h, x, y, ew, eh) {
+    let x0=i32(x); let y0=i32(y);
+    let x1=i32(x+ew); let y1=i32(y+eh);
+    if (tile_at(tiles,w,h,x0,y0)==1) return true;
+    if (tile_at(tiles,w,h,x1,y0)==1) return true;
+    if (tile_at(tiles,w,h,x0,y1)==1) return true;
+    if (tile_at(tiles,w,h,x1,y1)==1) return true;
+    return false;
+}
+
+fn spawn_entity(seed,w,h, xs,ys,vxs,vys, ws,hs, onGs,ais,lifes) {
+    append(xs,  rand01(seed)*(w-2)+1);
+    append(ys,  rand01(seed)*(h-2)+1);
+    append(vxs, (rand01(seed)-0.5)*6.0);
+    append(vys, (rand01(seed)-0.5)*2.0);
+    append(ws,  0.9);
+    append(hs,  0.9);
+    append(onGs,false);
+    append(ais, (rand01(seed) < 0.25));
+    append(lifes, 300 + (rand01(seed)*600));
+}
+
+fn bench(frames, entities, spawnPerFrame) {
+    let seed=[123456789];
+    let map=make_tilemap(128,72,seed[0]);
+    let w=map["w"]; let h=map["h"]; let tiles=map["tiles"];
+
+    let xs=[]; let ys=[]; let vxs=[]; let vys=[];
+    let ws=[]; let hs=[]; let onGs=[]; let ais=[]; let lifes=[];
+
+    for (let i = 0; i<entities; i++) { spawn_entity(seed[0],w,h,xs,ys,vxs,vys,ws,hs,onGs,ais,lifes);  }
+
+    let dt=1.0/60.0;
+    let checksum=0.0;
+
+    for (let f = 0; f<frames;f++) {
+        for (let s = 0; s<spawnPerFrame; s = s + 1) { spawn_entity(seed[0],w,h,xs,ys,vxs,vys,ws,hs,onGs,ais,lifes); }
+
+        # in-place compaction across ALL arrays
+        let write=0;
+        let n=0;
+        let L=len(xs);
+        for (let n = 0; n<L; n++) {
+            let x=xs[n]; let y=ys[n]; let vx=vxs[n]; let vy=vys[n];
+            let ew=ws[n]; let eh=hs[n];
+            let onG=onGs[n]; let ai=ais[n];
+            let life=lifes[n];
+
+            vy = vy + 18.0*dt;
+
+            if (ai) {
+                let dir=-1;
+                if (vx>=0) dir=1;
+                let aheadX=i32(x+dir);
+                let footY=i32(y+1.0);
+                if (tile_at(tiles,w,h,aheadX,footY)==0) vx = -vx;
+            }
+
+            let newX = x + vx*dt;
+            if (!aabb_hits_solid(tiles,w,h,newX,y,ew,eh)) x=newX; else vx=-vx*0.3;
+
+            let newY = y + vy*dt;
+            if (!aabb_hits_solid(tiles,w,h,x,newY,ew,eh)) { y=newY; onG=false; }
+            else { if (vy>0) onG=true; vy=0; }
+
+            if (onG) vx = vx*(1.0 - 8.0*dt);
+            life = life - 1;
+
+            checksum = checksum + x + y + vx + vy;
+
+            if (life > 0) {
+                xs[write]=x; ys[write]=y; vxs[write]=vx; vys[write]=vy;
+                ws[write]=ew; hs[write]=eh; onGs[write]=onG; ais[write]=ai; lifes[write]=life;
+                write = write + 1;
+            }
+        }
+
+        # trim tails (set to NULL so GC can drop refs if needed)
+        for (let k = write; k < L; k++) {
+            xs[k]=null; ys[k]=null; vxs[k]=null; vys[k]=null;
+            ws[k]=null; hs[k]=null; onGs[k]=null; ais[k]=null; lifes[k]=null;
+        }
+    }
+
+    printf("%f\n", checksum);
+}
+
+fn main() { ;
+       bench(3600, 300, 3);
+}

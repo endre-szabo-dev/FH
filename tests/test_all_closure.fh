@@ -76,11 +76,11 @@ fn test_nested_closures() {
 #
 fn make_loop_counters() {
     let arr = [];
-    grow(arr, 3);
+    reserve(arr, 4);
     let i = 0;
     while (i < 3) {
         let x = i;
-        arr[i] = fn() { return x; };
+        append(arr, fn() { return x; });
         i = i + 1;
     }
     return arr;
