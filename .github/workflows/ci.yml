@@ -41,6 +41,9 @@ jobs:
 
   build-and-test:
     name: Build (${{ matrix.distro }})
+    needs: version
+    # On main, only build when the version is new; PRs always build to validate
+    if: github.event_name == 'pull_request' || needs.version.outputs.is_new == 'true'
     runs-on: ubuntu-24.04
     strategy:
       matrix:
@@ -76,6 +79,9 @@ jobs:
 
   build-macos:
     name: Build MacOS
+    needs: version
+    # On main, only build when the version is new; PRs always build to validate
+    if: github.event_name == 'pull_request' || needs.version.outputs.is_new == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
