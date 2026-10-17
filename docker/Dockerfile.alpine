@@ -1,27 +1,35 @@
-# Stage 1: Builder
-FROM alpine:latest AS builder
+# syntax=docker/dockerfile:1
 
-# Install build dependencies
+# Stage 1: Builder
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS builder
+
+# Install build dependencies only
 RUN apk add --no-cache build-base
 
-# Set working directory
 WORKDIR /app
 
-# Copy source code
-COPY . .
+# Copy only what the build needs so unrelated changes keep the cache warm
+COPY Makefile ./
+COPY src ./src
 
-# Build the project and strip debug symbols
-RUN make clean && make -j4 TARGETS=release && strip fh
+# Build the release target and strip debug symbols
+RUN make -j"$(nproc)" TARGETS=release && strip fh
 
 # Stage 2: Runner
-FROM alpine:latest
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+
+LABEL org.opencontainers.image.title="fh" \
+      org.opencontainers.image.source="https://github.com/MuresanVladMihail/FH"
+
+# Unprivileged user to run the binary and tests
+RUN addgroup -S fh && adduser -S -G fh -H -h /app fh
 
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder /app/fh .
-COPY --from=builder /app/run_tests_release.sh .
-COPY --from=builder /app/tests tests/
+COPY --from=builder --chown=fh:fh /app/fh ./
+COPY --chown=fh:fh run_tests_release.sh ./
+COPY --chown=fh:fh tests ./tests
 
-# Run tests using the release binary
+USER fh
+
 CMD ["./run_tests_release.sh"]

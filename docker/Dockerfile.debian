@@ -1,31 +1,37 @@
-# Stage 1: Builder
-FROM debian:stable-slim AS builder
+# syntax=docker/dockerfile:1
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    make \
-    gcc \
+# Stage 1: Builder
+FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f AS builder
+
+# Install build dependencies only
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc make libc6-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy source code
-COPY . .
+# Copy only what the build needs so unrelated changes keep the cache warm
+COPY Makefile ./
+COPY src ./src
 
-# Build the project and strip debug symbols
-RUN make clean && make -j4 TARGETS=release && strip fh
+# Build the release target and strip debug symbols
+RUN make -j"$(nproc)" TARGETS=release && strip fh
 
 # Stage 2: Runner
-FROM debian:stable-slim
+FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
+
+LABEL org.opencontainers.image.title="fh" \
+      org.opencontainers.image.source="https://github.com/MuresanVladMihail/FH"
+
+# Unprivileged user to run the binary and tests
+RUN groupadd --system fh && useradd --system --gid fh --no-create-home --home-dir /app --shell /usr/sbin/nologin fh
 
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder /app/fh .
-COPY --from=builder /app/run_tests_release.sh .
-COPY --from=builder /app/tests tests/
+COPY --from=builder --chown=fh:fh /app/fh ./
+COPY --chown=fh:fh run_tests_release.sh ./
+COPY --chown=fh:fh tests ./tests
 
-# Run tests using the release binary
+USER fh
+
 CMD ["./run_tests_release.sh"]

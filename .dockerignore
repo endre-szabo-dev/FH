@@ -1,4 +1,11 @@
+# Keep the build context small; only Makefile, src, tests and
+# run_tests_release.sh are used by the Dockerfiles.
 .git
+.github
+docker
+docs
+examples
+tools
 **/*.o
+**/*.so
 fh
-tests/dynamic_libraries/*.so
