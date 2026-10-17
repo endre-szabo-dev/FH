@@ -8,12 +8,13 @@
 
 int fh_run_string(struct fh_program *prog, bool dump_bytecode, const char *string, const char *main_function_name) {
     char *template = "fb main(){%s;}";
-    char *code = malloc(strlen(template) - 2 + strlen(string) + 1);
+    size_t code_size = strlen(template) - 2 + strlen(string) + 1;
+    char *code = malloc(code_size);
     if (!code) {
         fh_set_error(prog, "out of memory for string");
         return -1;
     }
-    sprintf(code, template, string);
+    snprintf(code, code_size, template, string);
 
     struct fh_input *in = fh_open_input_string(code);
     if (!in) {
