@@ -59,6 +59,20 @@ plus core helpers like `len`, `append`, `has`, `type`, `assert`, `error`, and
 GC controls) are documented with parameters, return values and examples in
 [`docs/doc.mkd`](docs/doc.mkd).
 
+## Docker Build
+
+You can build and test `fh` using Docker (Alpine or Debian) without installing local dependencies.
+
+```bash
+# Build and test on Alpine (musl)
+./build_docker.sh alpine build
+./build_docker.sh alpine test
+
+# Build and test on Debian (glibc)
+./build_docker.sh debian build
+./build_docker.sh debian test
+```
+
 ## Features
 
 - compilation to bytecode

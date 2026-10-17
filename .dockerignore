@@ -1,0 +1,4 @@
+.git
+**/*.o
+fh
+tests/dynamic_libraries/*.so

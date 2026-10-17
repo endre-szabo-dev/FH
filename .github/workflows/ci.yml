@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Read version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract FH_VERSION from src/fh.h
+        id: ver
+        run: |
+          version=$(sed -n 's/^#define FH_VERSION "\(.*\)"/\1/p' src/fh.h)
+          if [ -z "$version" ]; then
+            echo "FH_VERSION not found in src/fh.h" >&2
+            exit 1
+          fi
+          echo "Detected version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build-and-test:
+    name: Build (${{ matrix.distro }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - distro: alpine
+            dockerfile: docker/Dockerfile.alpine
+            artifact_name: fh-linux-amd64-musl
+          - distro: debian
+            dockerfile: docker/Dockerfile.debian
+            artifact_name: fh-linux-amd64-gnu
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image (${{ matrix.distro }})
+        run: docker build -f ${{ matrix.dockerfile }} -t fh-${{ matrix.distro }} .
+
+      - name: Run tests (${{ matrix.distro }})
+        run: docker run --rm fh-${{ matrix.distro }} ./run_tests_release.sh
+
+      - name: Extract Binary
+        run: |
+          id=$(docker create fh-${{ matrix.distro }})
+          docker cp $id:/app/fh ${{ matrix.artifact_name }}
+          docker rm -v $id
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}
+
+  build-macos:
+    name: Build MacOS
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            os: macos-15-intel
+          - arch: arm64
+            os: macos-14
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: make -j4 TARGETS=release
+
+      - name: Run Tests
+        run: ./run_tests
+
+      - name: Rename Binary
+        run: mv fh fh-macos-${{ matrix.arch }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fh-macos-${{ matrix.arch }}
+          path: fh-macos-${{ matrix.arch }}
+
+  release:
+    name: Create Release
+    needs: [version, build-and-test, build-macos]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: fh-*
+          merge-multiple: true
+
+      - name: List Artifacts
+        run: ls -R
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: fh ${{ needs.version.outputs.version }}
+          prerelease: ${{ contains(needs.version.outputs.version, 'rc') }}
+          files: |
+            fh-linux-amd64-musl
+            fh-linux-amd64-gnu
+            fh-macos-amd64
+            fh-macos-arm64

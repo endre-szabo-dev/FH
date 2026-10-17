@@ -1,0 +1,31 @@
+# Stage 1: Builder
+FROM debian:stable-slim AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    make \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy source code
+COPY . .
+
+# Build the project and strip debug symbols
+RUN make clean && make -j4 TARGETS=release && strip fh
+
+# Stage 2: Runner
+FROM debian:stable-slim
+
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /app/fh .
+COPY --from=builder /app/run_tests_release.sh .
+COPY --from=builder /app/tests tests/
+
+# Run tests using the release binary
+CMD ["./run_tests_release.sh"]

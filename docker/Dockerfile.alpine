@@ -1,0 +1,27 @@
+# Stage 1: Builder
+FROM alpine:latest AS builder
+
+# Install build dependencies
+RUN apk add --no-cache build-base
+
+# Set working directory
+WORKDIR /app
+
+# Copy source code
+COPY . .
+
+# Build the project and strip debug symbols
+RUN make clean && make -j4 TARGETS=release && strip fh
+
+# Stage 2: Runner
+FROM alpine:latest
+
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /app/fh .
+COPY --from=builder /app/run_tests_release.sh .
+COPY --from=builder /app/tests tests/
+
+# Run tests using the release binary
+CMD ["./run_tests_release.sh"]
