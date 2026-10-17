@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.ver.outputs.version }}
+      is_new: ${{ steps.ver.outputs.is_new }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -29,6 +30,14 @@ jobs:
           fi
           echo "Detected version: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          # A release is only needed when no tag exists for this version yet
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            echo "Tag v$version already exists, skipping release"
+            echo "is_new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_new=true" >> "$GITHUB_OUTPUT"
+          fi
 
   build-and-test:
     name: Build (${{ matrix.distro }})
@@ -98,7 +107,7 @@ jobs:
   release:
     name: Create Release
     needs: [version, build-and-test, build-macos]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.version.outputs.is_new == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
